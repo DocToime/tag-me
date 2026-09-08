@@ -1,0 +1,28 @@
+{
+  "name": "recall-garden",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite --host 0.0.0.0",
+    "build": "tsc -b && vite build",
+    "preview": "vite preview --host 0.0.0.0",
+    "test": "vitest run",
+    "test:browser": "playwright test",
+    "format": "prettier --write src tests *.ts package.json tsconfig.json index.html public/favicon.svg",
+    "format:check": "prettier --check src tests *.ts package.json tsconfig.json index.html public/favicon.svg"
+  },
+  "dependencies": {
+    "react": "19.2.7",
+    "react-dom": "19.2.7"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.55.1",
+    "@types/react": "19.2.17",
+    "@types/react-dom": "19.2.3",
+    "prettier": "3.6.2",
+    "typescript": "5.9.3",
+    "vite": "6.4.3",
+    "vitest": "3.2.7"
+  }
+}
