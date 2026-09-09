@@ -9,6 +9,7 @@
     "preview": "vite preview --host 0.0.0.0",
     "test": "vitest run",
     "test:browser": "playwright test",
+    "test:pwa": "playwright test -c playwright.pwa.config.ts",
     "format": "prettier --write src tests *.ts package.json tsconfig.json index.html public/favicon.svg",
     "format:check": "prettier --check src tests *.ts package.json tsconfig.json index.html public/favicon.svg"
   },
@@ -23,6 +24,7 @@
     "prettier": "3.6.2",
     "typescript": "5.9.3",
     "vite": "6.4.3",
+    "vite-plugin-pwa": "1.1.0",
     "vitest": "3.2.7"
   }
 }
