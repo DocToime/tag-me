@@ -20,7 +20,16 @@ npm run build
 npm run preview
 ```
 
-The production app is a static site in `dist/`. It needs no backend, API key, database server, or environment variables. Deploy that directory to a static host. There are no external runtime fonts, assets, analytics, or API calls. Once loaded, a round requires no network connection. Offline reloads are not guaranteed: this release does not install a service worker.
+Open **http://localhost:4173/tag-me/** (not the preview site root). The production app is a static site in `dist/`. It needs no backend, API key, database server, or environment variables. Deploy that directory to a static host. There are no external runtime fonts, assets, analytics, or API calls.
+
+## Install and offline use
+
+Recall Garden is a progressive web app. After you open it once on [https://doctoime.github.io/tag-me/](https://doctoime.github.io/tag-me/) the browser keeps the game files.
+
+- Phone: browser menu → Install app, or on iPhone Share → Add to Home Screen.
+- Then airplane mode should still open the garden, run rounds, and save history on this device.
+- The first visit, and each new version until you choose Update, needs a network connection.
+- Scores stay in this browser. Export JSON if you want a copy. Clearing site data removes both scores and the cached app.
 
 ## What is included
 
@@ -118,6 +127,7 @@ npm run build              # strict TypeScript and production bundle
 npm run format:check       # consistent source formatting
 npx playwright install chromium
 npm run test:browser       # real browser workflows, virtual timing for long rounds
+npm run test:pwa           # service worker offline reload against the production preview
 ```
 
 If Google Chrome is already installed, avoid a browser download:
@@ -144,6 +154,7 @@ src/game/engine.ts         Frame scheduling, input windows, interruption
 src/game/protocol.ts       Frozen defaults, fingerprints, adaptation
 src/game/types.ts          Typed protocol and telemetry records
 src/data/storage.ts       IndexedDB, export, recovery keys, deletion
+src/pwa.ts                Production service worker registration
 src/styles.css            Responsive layout and visual system
 ```
 

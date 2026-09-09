@@ -15,6 +15,7 @@ import {
   saveSession,
 } from "./data/storage";
 import type { Block, Config, InputMode, N, Session } from "./game/types";
+import { applyPwaUpdate, pwaNeedRefresh, subscribePwa } from "./pwa";
 type Page = "home" | "progress" | "guide" | "settings";
 type Stage = "instructions" | "play" | "break" | "results" | null;
 interface Preferences {
@@ -65,10 +66,12 @@ export default function App() {
     [confirmDelete, setConfirmDelete] = useState(false),
     [assessment, setAssessment] = useState(false),
     [battery, setBattery] = useState(true),
-    [viewed, setViewed] = useState<Session | null>(null);
+    [viewed, setViewed] = useState<Session | null>(null),
+    [needRefresh, setNeedRefresh] = useState(false);
   const sessionRef = useRef<Session | null>(null);
   const initialised = useRef(false);
   const modalOpener = useRef<HTMLElement | null>(null);
+  useEffect(() => subscribePwa(() => setNeedRefresh(pwaNeedRefresh())), []);
   useEffect(() => {
     if (initialised.current) return;
     initialised.current = true;
@@ -162,6 +165,7 @@ export default function App() {
     n: N = prefs.n,
     tutorialComplete = false,
   ) {
+    void navigator.storage?.persist?.();
     setError("");
     let id: string;
     try {
@@ -646,7 +650,34 @@ export default function App() {
                   Sessions are stored in this browser on this device. No
                   account, uploads, or analytics. Clearing browser data removes
                   your history, so export a copy whenever you want to keep it.
+                  After this visit, this browser can open Recall Garden without
+                  a network. Phone: browser menu → Install app. iPhone: Share →
+                  Add to Home Screen. Scores stay on this device; export if you
+                  want a copy.
                 </p>
+                {!("serviceWorker" in navigator) && (
+                  <p>
+                    This browser cannot keep the app files cached. Play still
+                    works while the page stays open.
+                  </p>
+                )}
+                {needRefresh && (
+                  <div className="setting-row">
+                    <div>
+                      <h3>App update</h3>
+                      <p>
+                        {ongoing
+                          ? "A new version will apply when you finish this session."
+                          : "A new version is ready. Applying it reloads the page."}
+                      </p>
+                    </div>
+                    {!ongoing && (
+                      <button className="secondary" onClick={applyPwaUpdate}>
+                        Update now
+                      </button>
+                    )}
+                  </div>
+                )}
                 <div className="button-row left">
                   <button
                     className="secondary"
