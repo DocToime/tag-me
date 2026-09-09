@@ -1,12 +1,13 @@
 import { defineConfig } from "@playwright/test";
 export default defineConfig({
   testDir: "tests",
-  testMatch: "browser.spec.ts",
+  testMatch: "*.spec.ts",
   timeout: 90000,
   workers: 1,
   use: {
     baseURL: "http://127.0.0.1:5173",
-    viewport: { width: 1440, height: 1060 },
+    viewport: { width: 1366, height: 768 },
+    screenshot: "only-on-failure",
     headless: true,
     channel: process.env.PLAYWRIGHT_CHANNEL || undefined,
     launchOptions: { args: ["--no-sandbox"] },

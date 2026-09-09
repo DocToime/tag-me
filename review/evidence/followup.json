@@ -1,0 +1,116 @@
+{
+  "modalKeyboardReturn": {
+    "tag": "BODY",
+    "name": null
+  },
+  "overflow": [
+    {
+      "class": "dashboard-grid",
+      "rect": {
+        "x": 18,
+        "y": -152,
+        "width": 284,
+        "height": 676.640625,
+        "top": -152,
+        "right": 302,
+        "bottom": 524.640625,
+        "left": 18
+      },
+      "minWidth": "0px",
+      "scrollWidth": 319
+    },
+    {
+      "class": "card setup-card",
+      "rect": {
+        "x": 18,
+        "y": -152,
+        "width": 318.90625,
+        "height": 410.296875,
+        "top": -152,
+        "right": 336.90625,
+        "bottom": 258.296875,
+        "left": 18
+      },
+      "minWidth": "auto",
+      "scrollWidth": 317
+    },
+    {
+      "class": "section-heading",
+      "rect": {
+        "x": 40,
+        "y": -130,
+        "width": 274.90625,
+        "height": 45,
+        "top": -130,
+        "right": 314.90625,
+        "bottom": -85,
+        "left": 40
+      },
+      "minWidth": "0px",
+      "scrollWidth": 275
+    },
+    {
+      "class": "level-options",
+      "rect": {
+        "x": 40,
+        "y": -39,
+        "width": 274.90625,
+        "height": 86,
+        "top": -39,
+        "right": 314.90625,
+        "bottom": 47,
+        "left": 40
+      },
+      "minWidth": "0px",
+      "scrollWidth": 275
+    },
+    {
+      "class": "setup-bottom",
+      "rect": {
+        "x": 40,
+        "y": 67,
+        "width": 274.90625,
+        "height": 137,
+        "top": 67,
+        "right": 314.90625,
+        "bottom": 204,
+        "left": 40
+      },
+      "minWidth": "0px",
+      "scrollWidth": 275
+    },
+    {
+      "class": "card how-card",
+      "rect": {
+        "x": 18,
+        "y": 275.296875,
+        "width": 318.90625,
+        "height": 249.34375,
+        "top": 275.296875,
+        "right": 336.90625,
+        "bottom": 524.640625,
+        "left": 18
+      },
+      "minWidth": "auto",
+      "scrollWidth": 317
+    }
+  ],
+  "webkit": [
+    {
+      "controlled": false,
+      "errors": [],
+      "text": "practice · Getting familiar\nStop round\n1-back\nNotice. Remember. Match.\nMatch the number from 1 turn ago. Otherwise, wait.\nMemory fill · just remember\n2s per number\n\n\n6\n\n\n\n\nJust remember this number.\nIt’s a match\nSPACE\nNo match? No action needed.",
+      "phase": "visible",
+      "ack": true,
+      "stopped": true
+    },
+    {
+      "controlled": true,
+      "errors": [],
+      "text": "practice · Getting familiar\nStop round\n1-back\nNotice. Remember. Match.\nMatch the number from 1 turn ago. Otherwise, wait.\nMemory fill · just remember\n2s per number\n\n\n7\n\n\n\n\nJust remember this number.\nIt’s a match\nSPACE\nNo match? No action needed.",
+      "phase": "visible",
+      "ack": true,
+      "stopped": true
+    }
+  ]
+}

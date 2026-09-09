@@ -1,0 +1,315 @@
+{
+  "tabletAccessibility": [
+    {
+      "role": "link",
+      "name": "",
+      "properties": [
+        {
+          "name": "focusable",
+          "value": {
+            "type": "booleanOrUndefined",
+            "value": true
+          }
+        },
+        {
+          "name": "url",
+          "value": {
+            "type": "string",
+            "value": "http://127.0.0.1:5173/#"
+          }
+        }
+      ]
+    },
+    {
+      "role": "button",
+      "name": "",
+      "properties": [
+        {
+          "name": "invalid",
+          "value": {
+            "type": "token",
+            "value": "false"
+          }
+        },
+        {
+          "name": "focusable",
+          "value": {
+            "type": "booleanOrUndefined",
+            "value": true
+          }
+        }
+      ]
+    },
+    {
+      "role": "button",
+      "name": "",
+      "properties": [
+        {
+          "name": "invalid",
+          "value": {
+            "type": "token",
+            "value": "false"
+          }
+        },
+        {
+          "name": "focusable",
+          "value": {
+            "type": "booleanOrUndefined",
+            "value": true
+          }
+        }
+      ]
+    },
+    {
+      "role": "button",
+      "name": "",
+      "properties": [
+        {
+          "name": "invalid",
+          "value": {
+            "type": "token",
+            "value": "false"
+          }
+        },
+        {
+          "name": "focusable",
+          "value": {
+            "type": "booleanOrUndefined",
+            "value": true
+          }
+        }
+      ]
+    },
+    {
+      "role": "button",
+      "name": "",
+      "properties": [
+        {
+          "name": "invalid",
+          "value": {
+            "type": "token",
+            "value": "false"
+          }
+        },
+        {
+          "name": "focusable",
+          "value": {
+            "type": "booleanOrUndefined",
+            "value": true
+          }
+        }
+      ]
+    },
+    {
+      "role": "button",
+      "name": "●○○ 1-back Find your rhythm ✓",
+      "properties": [
+        {
+          "name": "invalid",
+          "value": {
+            "type": "token",
+            "value": "false"
+          }
+        },
+        {
+          "name": "focusable",
+          "value": {
+            "type": "booleanOrUndefined",
+            "value": true
+          }
+        }
+      ]
+    },
+    {
+      "role": "button",
+      "name": "●●○ 2-back Stretch your focus",
+      "properties": [
+        {
+          "name": "invalid",
+          "value": {
+            "type": "token",
+            "value": "false"
+          }
+        },
+        {
+          "name": "focusable",
+          "value": {
+            "type": "booleanOrUndefined",
+            "value": true
+          }
+        }
+      ]
+    },
+    {
+      "role": "button",
+      "name": "●●● 3-back Go a little deeper",
+      "properties": [
+        {
+          "name": "invalid",
+          "value": {
+            "type": "token",
+            "value": "false"
+          }
+        },
+        {
+          "name": "focusable",
+          "value": {
+            "type": "booleanOrUndefined",
+            "value": true
+          }
+        }
+      ]
+    },
+    {
+      "role": "button",
+      "name": "Show me how",
+      "properties": [
+        {
+          "name": "invalid",
+          "value": {
+            "type": "token",
+            "value": "false"
+          }
+        },
+        {
+          "name": "focusable",
+          "value": {
+            "type": "booleanOrUndefined",
+            "value": true
+          }
+        }
+      ]
+    },
+    {
+      "role": "button",
+      "name": "Explore assessment",
+      "properties": [
+        {
+          "name": "invalid",
+          "value": {
+            "type": "token",
+            "value": "false"
+          }
+        },
+        {
+          "name": "focusable",
+          "value": {
+            "type": "booleanOrUndefined",
+            "value": true
+          }
+        }
+      ]
+    },
+    {
+      "role": "button",
+      "name": "Start training",
+      "properties": [
+        {
+          "name": "invalid",
+          "value": {
+            "type": "token",
+            "value": "false"
+          }
+        },
+        {
+          "name": "focusable",
+          "value": {
+            "type": "booleanOrUndefined",
+            "value": true
+          }
+        }
+      ]
+    }
+  ],
+  "tabletNamedHomeButtons": 0,
+  "copyContrast": [
+    {
+      "selector": ".hero p",
+      "fontSize": "12px",
+      "color": "rgb(122, 132, 111)",
+      "background": "rgb(240, 242, 231)",
+      "contrast": 3.46
+    },
+    {
+      "selector": ".hero-meta",
+      "fontSize": "9px",
+      "color": "rgb(123, 137, 110)",
+      "background": "rgb(240, 242, 231)",
+      "contrast": 3.29
+    },
+    {
+      "selector": ".stats-row p",
+      "fontSize": "8px",
+      "color": "rgb(138, 149, 129)",
+      "background": "rgb(250, 251, 247)",
+      "contrast": 3.02
+    },
+    {
+      "selector": ".quiet",
+      "fontSize": "9px",
+      "color": "rgb(132, 144, 120)",
+      "background": "rgb(255, 255, 255)",
+      "contrast": 3.36
+    },
+    {
+      "selector": ".field-label",
+      "fontSize": "11px",
+      "color": "rgb(104, 120, 94)",
+      "background": "rgb(255, 255, 255)",
+      "contrast": 4.73
+    }
+  ],
+  "dialogInitialFocus": "Close assessment",
+  "dialogWrapFocus": "Begin assessment ",
+  "dialogRestoredFocus": "\n    recallgardenA LITTLE FOCUS, EVERY DAYMy gardenMy progressHow to playA little practice.A little more possibility.GROW AT YOUR OWN PACESettings & data Your own quiet cornerYour daily space to grow Local & privateYouYOUR MIND HAS ROOM TO GROWWednesday, September 9 A small daily practiceA little focus.A growing memory.Meet your daily moment of mental exercise. Remember, recognise, and find your rhythm.Start training9 min of playAt your own pace3✓ A little focus. Room to grow.A FRESH CHALLENGE, EVERY TIME0roundsSeeds of progress0daysTime made for yourself—Your next chapter starts hereMAKE IT YOURSToday’s practiceAdaptive trainingYour starting level Challenge grows with you●○○1-backFind your rhythm✓●●○2-backStretch your focus●●●3-backGo a little deeperSession length1 round · a quick reset3 rounds · a daily practice5 rounds · a longer stretchResponse styleMatch button / SpaceTap mole / Q W E A S DShort practice first. Breaks whenever you need them.SIMPLE TO LEARNSee a familiar number?2→5→2match!In 2-back, match the number from two turns ago. Different number? Just let it pass.Show me how A moment to measureTry a fixed assessment and keep a separate record of your performance.Explore assessment Progress grows with practice. Make a little room for yours.Saved on this device\n    \n  \n\n",
+  "tutorialFocus": {
+    "tag": "BODY",
+    "text": "body"
+  },
+  "beforeResize": {
+    "x": 110,
+    "y": 336,
+    "width": 543,
+    "height": 335
+  },
+  "afterResize": {
+    "x": 18,
+    "y": 245.15625,
+    "width": 644,
+    "height": 295
+  },
+  "resizePhase": "visible",
+  "effective200PercentLaptop": {
+    "viewport": {
+      "width": 640,
+      "height": 360
+    },
+    "board": {
+      "x": 18,
+      "y": 245.15625,
+      "width": 604,
+      "height": 295
+    },
+    "match": {
+      "x": 165,
+      "y": 584.15625,
+      "width": 310,
+      "height": 56
+    }
+  },
+  "crossBrowser": [
+    {
+      "name": "Firefox",
+      "version": "141.0",
+      "errors": [],
+      "responseAcknowledged": true,
+      "stopWorked": true
+    },
+    {
+      "name": "WebKit",
+      "version": "26.0",
+      "errors": [],
+      "failure": "TimeoutError: locator.waitFor: Timeout 10000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('.hole.occupied') to be visible\u001b[22m\n"
+    }
+  ]
+}

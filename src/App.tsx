@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
-import { Garden, Icon, Mole } from "./components/Art";
+import { Icon, Mole } from "./components/Art";
 import Play from "./components/Play";
+import Tutorial from "./components/Tutorial";
 import { BlockResult, Progress, SessionResults } from "./components/Results";
 import { adapt, passedPractice, protocol } from "./game/protocol";
 import {
@@ -46,141 +47,6 @@ function getPreferences(): Preferences {
     return defaults;
   }
 }
-function Tutorial({
-  n,
-  onN,
-  onPractice,
-  standalone = false,
-}: {
-  n: N;
-  onN?: (n: N) => void;
-  onPractice: () => void;
-  standalone?: boolean;
-}) {
-  const [step, setStep] = useState(0);
-  useEffect(() => setStep(0), [n]);
-  const numbers =
-    n === 1
-      ? [2, 2, 5, 8, 8, 3]
-      : n === 2
-        ? [2, 5, 2, 8, 2, 8]
-        : [2, 5, 8, 2, 7, 8];
-  const target = step >= n && numbers[step] === numbers[step - n];
-  return (
-    <section className="tutorial">
-      <div className="page-heading">
-        <div>
-          <span className="eyebrow">
-            {standalone ? "HOW TO PLAY" : "A MOMENT TO GET FAMILIAR"}
-          </span>
-          <h1>A number. A memory. A match.</h1>
-          <p>
-            Remember the number from{" "}
-            <strong>
-              {n} turn{n > 1 ? "s" : ""} ago
-            </strong>
-            . If it appears again, it’s a match.
-          </p>
-        </div>
-      </div>
-      {onN && (
-        <div className="segmented tutorial-level">
-          {([1, 2, 3] as N[]).map((v) => (
-            <button
-              key={v}
-              className={n === v ? "selected" : ""}
-              onClick={() => onN(v)}
-            >
-              {v}-back
-            </button>
-          ))}
-        </div>
-      )}
-      <div className="card example-card">
-        <span className="small-tag">
-          Guided example · {step + 1} / {numbers.length}
-        </span>
-        <div className="example-mole">
-          <Mole digit={numbers[step]} />
-        </div>
-        <div className="digit-history">
-          {numbers.map((digit, i) => (
-            <div
-              key={i}
-              className={`example-digit ${i === step ? "current" : ""} ${step >= n && i === step - n ? "compare" : ""} ${i > step ? "future" : ""}`}
-            >
-              <span>{i <= step ? digit : "·"}</span>
-              <small>
-                {i === step
-                  ? "Now"
-                  : step >= n && i === step - n
-                    ? `${n} ago`
-                    : i < step
-                      ? "Earlier"
-                      : "Next"}
-              </small>
-            </div>
-          ))}
-        </div>
-        <div className="example-explanation" aria-live="polite">
-          <strong>
-            {step < n
-              ? "First, fill your memory."
-              : target
-                ? "Yes, this is a match."
-                : "Different number. Let it pass."}
-          </strong>
-          <p>
-            {step < n
-              ? `There ${n - step === 1 ? "is" : "are"} ${n - step} more number${n - step > 1 ? "s" : ""} to remember before comparisons begin. No response is needed.`
-              : `The number now is ${numbers[step]}. ${n} turn${n > 1 ? "s" : ""} ago it was ${numbers[step - n]}. ${target ? "Press the match control." : "Wait for the next mole."}`}
-          </p>
-        </div>
-        <div className="button-row">
-          <button
-            className="secondary"
-            disabled={step === 0}
-            onClick={() => setStep(step - 1)}
-          >
-            Back
-          </button>
-          {step < numbers.length - 1 ? (
-            <button className="primary" onClick={() => setStep(step + 1)}>
-              Next number <Icon name="arrow" size={18} />
-            </button>
-          ) : (
-            <button className="primary" onClick={onPractice}>
-              Try it in practice <Icon name="arrow" size={18} />
-            </button>
-          )}
-        </div>
-      </div>
-      <div className="instruction-notes">
-        <div>
-          <Icon name="target" />
-          <h3>Numbers, not positions</h3>
-          <p>The mole moves around. Only its shirt number matters.</p>
-        </div>
-        <div>
-          <Icon name="clock" />
-          <h3>Keep a steady rhythm</h3>
-          <p>
-            Every number stays for the same amount of time, even after you
-            respond.
-          </p>
-        </div>
-        <div>
-          <Icon name="leaf" />
-          <h3>Make room for the next</h3>
-          <p>
-            Remember, compare, then update. The number trail is only shown in
-            this example.
-          </p>
-        </div>
-      </div>
-    </section>
-  );
-}
 export default function App() {
   const [page, setPage] = useState<Page>("home"),
     [stage, setStage] = useState<Stage>(null),
@@ -202,6 +68,7 @@ export default function App() {
     [viewed, setViewed] = useState<Session | null>(null);
   const sessionRef = useRef<Session | null>(null);
   const initialised = useRef(false);
+  const modalOpener = useRef<HTMLElement | null>(null);
   useEffect(() => {
     if (initialised.current) return;
     initialised.current = true;
@@ -240,10 +107,15 @@ export default function App() {
   }, [prefs]);
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: "instant" });
+    const target = document.querySelector<HTMLElement>(
+      stage === "play" ? ".play-page" : "main h1",
+    );
+    target?.setAttribute("tabindex", "-1");
+    target?.focus({ preventScroll: true });
   }, [page, stage, viewed]);
   useEffect(() => {
     if (!assessment && !confirmDelete) return;
-    const previousFocus = document.activeElement as HTMLElement | null;
+    const previousFocus = modalOpener.current;
     const background = document.querySelectorAll<HTMLElement>(
       ".sidebar, .main-area",
     );
@@ -331,7 +203,17 @@ export default function App() {
     setLastBlock(null);
     setViewed(null);
     persist(s);
-    if (tutorialComplete) launch("practice", n);
+    const upcomingN = mode === "assessment" && battery ? 1 : n;
+    const knownLevel = sessions.some((saved) =>
+      saved.blocks.some(
+        (block) =>
+          block.config.mode === "practice" &&
+          block.config.n === upcomingN &&
+          block.config.input === s.config.input &&
+          passedPractice(block),
+      ),
+    );
+    if (tutorialComplete || knownLevel) launch("practice", upcomingN);
     else setStage("instructions");
   }
   function launch(mode: Config["mode"], n = currentN) {
@@ -415,21 +297,6 @@ export default function App() {
     setPage(next);
     setStage(null);
   }
-  const completedTraining = sessions
-    .flatMap((s) => s.blocks)
-    .filter((b) => b.config.mode === "training" && b.status === "completed");
-  const days = new Set(
-    sessions
-      .filter((s) =>
-        s.blocks.some(
-          (b) => b.config.mode === "training" && b.status === "completed",
-        ),
-      )
-      .map((s) => new Date(s.startedAt).toLocaleDateString()),
-  ).size;
-  const best = completedTraining.length
-    ? Math.max(...completedTraining.map((b) => b.config.n))
-    : null;
   const ongoing = stage !== null && stage !== "results";
   const actualSession = viewed ?? session;
   const round =
@@ -437,11 +304,14 @@ export default function App() {
       (b) => b.config.mode === session.mode && b.status === "completed",
     ).length ?? 0) + 1;
   return (
-    <div className={`app-shell ${stage === "play" ? "is-playing" : ""}`}>
+    <div
+      className={`app-shell ${ongoing ? "is-session" : ""} ${stage === "play" ? "is-playing" : ""}`}
+    >
       <aside className="sidebar">
         <a
           className="brand"
           href="#"
+          aria-label="Recall Garden home"
           onClick={(e) => {
             e.preventDefault();
             if (!ongoing) navigate("home");
@@ -454,7 +324,6 @@ export default function App() {
             recall<span className="brand-second">garden</span>
           </span>
         </a>
-        <div className="sidebar-caption">A LITTLE FOCUS, EVERY DAY</div>
         <nav aria-label="Main navigation">
           {(
             [
@@ -466,24 +335,21 @@ export default function App() {
             <button
               key={item.id}
               disabled={ongoing}
+              aria-label={item.name}
+              aria-current={page === item.id && !viewed ? "page" : undefined}
+              title={item.name}
               className={page === item.id && !viewed ? "active" : ""}
               onClick={() => navigate(item.id)}
             >
               <Icon name={item.icon} />
               <span>{item.name}</span>
-              {page === item.id && <i />}
             </button>
           ))}
         </nav>
-        <div className="sidebar-note">
-          <Icon name="sprout" size={29} />
-          <p>
-            A little practice.
-            <br />A little more possibility.
-          </p>
-          <span>GROW AT YOUR OWN PACE</span>
-        </div>
         <button
+          aria-label="Settings & data"
+          title="Settings & data"
+          aria-current={page === "settings" ? "page" : undefined}
           className={`settings-nav ${page === "settings" ? "active" : ""}`}
           disabled={ongoing}
           onClick={() => navigate("settings")}
@@ -491,30 +357,8 @@ export default function App() {
           <Icon name="settings" />
           <span>Settings & data</span>
         </button>
-        <div className="local-badge">
-          <span /> Your own quiet corner
-        </div>
       </aside>
       <div className="main-area">
-        <header className="topbar">
-          <span>
-            {stage === "play"
-              ? "A moment for your memory"
-              : page === "home"
-                ? "Your daily space to grow"
-                : page === "progress"
-                  ? "Every round is a small step"
-                  : page === "guide"
-                    ? "Get to know the rhythm"
-                    : "Make yourself at home"}
-          </span>
-          <div>
-            <span className="private-label">
-              <Icon name="lock" size={14} /> Local & private
-            </span>
-            <span className="avatar">You</span>
-          </div>
-        </header>
         <main>
           {error && (
             <p className="notice" role="alert">
@@ -535,49 +379,46 @@ export default function App() {
               <button className="text-button back-link" onClick={() => end()}>
                 ← Finish for now
               </button>
-              <Tutorial n={currentN} onPractice={() => launch("practice")} />
-              <p className="quiet centered">
-                Practice has 12 trials after memory fill. Catch at least 5 of 6
-                matches, with no more than 1 false alarm.
-              </p>
+              <Tutorial
+                n={currentN}
+                input={session?.config.input ?? prefs.input}
+                onPractice={() => launch("practice")}
+              />
             </>
           ) : stage === "break" && lastBlock ? (
             <section className="break-page">
-              <div className="completion-symbol">
-                <Icon
-                  name={lastBlock.status === "interrupted" ? "clock" : "sprout"}
-                  size={38}
-                />
-              </div>
-              <span className="eyebrow">
-                {lastBlock.status === "interrupted"
-                  ? "LET’S TAKE A BREATH"
-                  : lastBlock.config.mode === "practice"
-                    ? "PRACTICE COMPLETE"
-                    : "A LITTLE MORE GROWTH"}
-              </span>
               <h1>
                 {lastBlock.status === "interrupted"
-                  ? "Ready for a fresh start?"
+                  ? "Round stopped"
                   : lastBlock.config.mode === "practice"
                     ? passedPractice(lastBlock)
-                      ? "You’ve got the rhythm."
-                      : "Let’s give it another go."
-                    : "A good moment to pause."}
+                      ? "Practice passed"
+                      : "Practice needs a retry"
+                    : "Round complete"}
               </h1>
               <p>
                 {lastBlock.status === "interrupted"
-                  ? "This attempt has been saved. Restart with new numbers and a fresh memory buffer."
+                  ? `${lastBlock.reason}. Restart with new numbers.`
                   : lastBlock.config.mode === "practice"
-                    ? passedPractice(lastBlock)
-                      ? "You’re ready for the scored round. Take your time before starting."
-                      : "Catch at least 5 of 6 matches, with no more than 1 false alarm. The tutorial is here whenever you need it."
+                    ? lastBlock.frames.length
+                      ? "Timing was uneven on this device. Retry practice before starting a scored round."
+                      : `${lastBlock.summary.hits} of 6 matches caught · ${lastBlock.summary.fa} false alarm${lastBlock.summary.fa === 1 ? "" : "s"}.${passedPractice(lastBlock) ? "" : " Aim for at least 5 matches and at most 1 false alarm."}`
                     : session?.mode === "training"
                       ? nextDifficulty(session, currentN).reason
-                      : "Take a break. The next round introduces a new level."}
+                      : "Take a break before the next level."}
               </p>
-              <BlockResult block={lastBlock} />
-              <div className="button-row">
+              <div className="button-row break-actions">
+                <button className="primary" onClick={continueSession}>
+                  {lastBlock.status === "interrupted"
+                    ? "Restart round"
+                    : lastBlock.config.mode === "practice"
+                      ? passedPractice(lastBlock)
+                        ? "Start scored round"
+                        : "Try practice again"
+                      : `Continue · ${session?.mode === "training" ? nextDifficulty(session, currentN).to : currentN + 1}-back`}
+                  <Icon name="arrow" size={18} />
+                </button>
+
                 <button className="secondary" onClick={() => end()}>
                   Finish for now
                 </button>
@@ -590,17 +431,15 @@ export default function App() {
                       Review tutorial
                     </button>
                   )}
-                <button className="primary" onClick={continueSession}>
-                  {lastBlock.status === "interrupted"
-                    ? "Restart round"
-                    : lastBlock.config.mode === "practice"
-                      ? passedPractice(lastBlock)
-                        ? "Start scored round"
-                        : "Try practice again"
-                      : `Continue · ${session?.mode === "training" ? nextDifficulty(session, currentN).to : currentN + 1}-back`}
-                  <Icon name="arrow" size={18} />
-                </button>
               </div>
+              <details className="break-details">
+                <summary>
+                  {lastBlock.config.mode === "practice"
+                    ? "Practice details"
+                    : "Round details"}
+                </summary>
+                <BlockResult block={lastBlock} />
+              </details>
             </section>
           ) : stage === "results" || viewed ? (
             <section>
@@ -612,17 +451,11 @@ export default function App() {
               </button>
               <div className="page-heading">
                 <div>
-                  <span className="eyebrow">
-                    {actualSession?.status === "completed"
-                      ? "SESSION COMPLETE"
-                      : "YOUR SAVED SESSION"}
-                  </span>
                   <h1>
                     {actualSession?.status === "completed"
-                      ? "A little time, well spent."
-                      : "Every attempt has a place."}
+                      ? "Session complete"
+                      : "Saved session"}
                   </h1>
-                  <p>Your practice, one round at a time.</p>
                 </div>
                 <button
                   className="secondary"
@@ -634,251 +467,146 @@ export default function App() {
               {actualSession && (
                 <>
                   <SessionResults session={actualSession} />
-                  <p className="quiet">
-                    Device context: {actualSession.client.width} ×{" "}
-                    {actualSession.client.height} · {actualSession.config.input}{" "}
-                    input · {actualSession.client.ua}
-                  </p>
+                  <details className="device-details">
+                    <summary>Device details</summary>
+                    <p className="quiet">
+                      Device context: {actualSession.client.width} ×{" "}
+                      {actualSession.client.height} ·{" "}
+                      {actualSession.config.input} input ·{" "}
+                      {actualSession.client.ua}
+                    </p>
+                  </details>
                 </>
               )}
             </section>
           ) : page === "home" ? (
-            <>
-              <div className="welcome-line">
-                <span className="eyebrow">YOUR MIND HAS ROOM TO GROW</span>
-                <span>
-                  {new Date().toLocaleDateString(undefined, {
-                    weekday: "long",
-                    day: "numeric",
-                    month: "long",
-                  })}
-                </span>
-              </div>
-              <section className="hero">
-                <div className="hero-copy">
-                  <span className="pill">
-                    <span /> A small daily practice
-                  </span>
-                  <h1>
-                    A little focus.
-                    <br />A growing memory.
-                  </h1>
+            <section className="home-page">
+              <div className="home-heading">
+                <div>
+                  <h1>Ready for a round?</h1>
                   <p>
-                    Meet your daily moment of mental exercise.
-                    <br className="desktop-break" /> Remember, recognise, and
-                    find your rhythm.
+                    Match the number from {prefs.n} turn{prefs.n > 1 ? "s" : ""}{" "}
+                    ago.
                   </p>
-                  <button
-                    className="primary hero-cta"
-                    disabled={!loaded}
-                    onClick={() => start("training")}
-                  >
-                    {loaded ? "Start training" : "Getting your garden ready…"}
-                    <Icon name="arrow" size={20} />
-                  </button>
-                  <div className="hero-meta">
-                    <span>
-                      <Icon name="clock" size={15} />
-                      {Math.round(
-                        (prefs.blocks * 62 * (prefs.windowMs + 750)) / 60000,
-                      )}{" "}
-                      min of play
-                    </span>
-                    <span>
-                      <Icon name="leaf" size={15} />
-                      At your own pace
-                    </span>
-                  </div>
                 </div>
-                <Garden />
-                <span className="hero-bottom-note">
-                  A FRESH CHALLENGE, EVERY TIME
-                </span>
-              </section>
-              <div className="stats-row">
-                <div>
-                  <span className="stat-icon sage">
-                    <Icon name="sprout" />
-                  </span>
-                  <span>
-                    <strong>
-                      {completedTraining.length}
-                      <small>rounds</small>
-                    </strong>
-                    <p>Seeds of progress</p>
-                  </span>
-                </div>
-                <div>
-                  <span className="stat-icon peach">
-                    <Icon name="sun" />
-                  </span>
-                  <span>
-                    <strong>
-                      {days}
-                      <small>{days === 1 ? "day" : "days"}</small>
-                    </strong>
-                    <p>Time made for yourself</p>
-                  </span>
-                </div>
-                <div>
-                  <span className="stat-icon yellow">
-                    <Icon name="target" />
-                  </span>
-                  <span>
-                    <strong>{best === null ? "—" : `${best}-back`}</strong>
-                    <p>
-                      {best === null
-                        ? "Your next chapter starts here"
-                        : "Highest level practised"}
-                    </p>
-                  </span>
+                <div className="home-mole">
+                  <Mole digit={prefs.n} decorative />
                 </div>
               </div>
-              <div className="dashboard-grid">
-                <section className="card setup-card">
-                  <div className="section-heading">
-                    <div>
-                      <span className="eyebrow">MAKE IT YOURS</span>
-                      <h2>Today’s practice</h2>
-                    </div>
-                    <span className="small-tag">Adaptive training</span>
-                  </div>
-                  <label className="field-label">
-                    Your starting level <span>Challenge grows with you</span>
-                  </label>
-                  <div className="level-options">
-                    {([1, 2, 3] as N[]).map((n) => (
-                      <button
-                        key={n}
-                        className={prefs.n === n ? "chosen" : ""}
-                        onClick={() => setPrefs({ ...prefs, n })}
-                      >
-                        <span className="level-dots">
-                          {"●".repeat(n)}
-                          <span>{"○".repeat(3 - n)}</span>
-                        </span>
-                        <strong>{n}-back</strong>
-                        <small>
-                          {n === 1
-                            ? "Find your rhythm"
-                            : n === 2
-                              ? "Stretch your focus"
-                              : "Go a little deeper"}
-                        </small>
-                        {prefs.n === n && (
-                          <span className="selection-check">✓</span>
-                        )}
-                      </button>
+              <section className="card setup-card" aria-label="Training setup">
+                <span className="field-label" id="starting-level">
+                  Starting level
+                </span>
+                <div
+                  className="level-options"
+                  role="group"
+                  aria-labelledby="starting-level"
+                >
+                  {([1, 2, 3] as N[]).map((n) => (
+                    <button
+                      key={n}
+                      aria-pressed={prefs.n === n}
+                      className={prefs.n === n ? "chosen" : ""}
+                      onClick={() => setPrefs({ ...prefs, n })}
+                    >
+                      <strong>{n}-back</strong>
+                      <small>
+                        {n} turn{n > 1 ? "s" : ""} ago
+                      </small>
+                    </button>
+                  ))}
+                </div>
+                <label className="session-length">
+                  Session length
+                  <select
+                    value={prefs.blocks}
+                    onChange={(e) =>
+                      setPrefs({ ...prefs, blocks: +e.target.value })
+                    }
+                  >
+                    {[1, 3, 5].map((blocks) => (
+                      <option key={blocks} value={blocks}>
+                        {blocks} round{blocks > 1 ? "s" : ""} · ~
+                        {Math.round(
+                          (blocks * (60 + prefs.n) * (prefs.windowMs + 750)) /
+                            60000,
+                        )}{" "}
+                        min
+                      </option>
                     ))}
-                  </div>
-                  <div className="setup-bottom">
-                    <label>
-                      Session length
-                      <select
-                        value={prefs.blocks}
-                        onChange={(e) =>
-                          setPrefs({ ...prefs, blocks: +e.target.value })
-                        }
-                      >
-                        <option value={1}>1 round · a quick reset</option>
-                        <option value={3}>3 rounds · a daily practice</option>
-                        <option value={5}>5 rounds · a longer stretch</option>
-                      </select>
-                    </label>
-                    <label>
-                      Response style
-                      <select
-                        value={prefs.input}
-                        onChange={(e) =>
-                          setPrefs({
-                            ...prefs,
-                            input: e.target.value as InputMode,
-                          })
-                        }
-                      >
-                        <option value="fixed">Match button / Space</option>
-                        <option value="aimed">Tap mole / Q W E A S D</option>
-                      </select>
-                    </label>
-                  </div>
-                  <p className="quiet setup-footnote">
-                    <Icon name="leaf" size={15} />
-                    Short practice first. Breaks whenever you need them.
-                  </p>
-                </section>
-                <section className="card how-card">
-                  <span className="eyebrow">SIMPLE TO LEARN</span>
-                  <h2>See a familiar number?</h2>
-                  <div className="mini-example">
-                    <span>2</span>
-                    <i>→</i>
-                    <span>5</span>
-                    <i>→</i>
-                    <span className="match-digit">
-                      2<small>match!</small>
-                    </span>
-                  </div>
-                  <p>
-                    In <strong>2-back</strong>, match the number from two turns
-                    ago. Different number? Just let it pass.
-                  </p>
-                  <button
-                    className="text-button"
-                    onClick={() => navigate("guide")}
-                  >
-                    Show me how <Icon name="arrow" size={18} />
-                  </button>
-                </section>
-              </div>
-              <section className="assessment-strip">
-                <span className="stat-icon">
-                  <Icon name="chart" />
-                </span>
-                <div>
-                  <h3>A moment to measure</h3>
-                  <p>
-                    Try a fixed assessment and keep a separate record of your
-                    performance.
-                  </p>
-                </div>
+                  </select>
+                </label>
                 <button
-                  className="secondary"
-                  onClick={() => setAssessment(true)}
+                  className="primary full-width start-training"
+                  disabled={!loaded}
+                  onClick={() => start("training")}
+                >
+                  {loaded ? "Start training" : "Loading…"}
+                  <Icon name="arrow" size={18} />
+                </button>
+                <p className="quiet setup-footnote">
+                  Plus a short practice and breaks.
+                </p>
+              </section>
+              <div className="home-links">
+                <button
+                  className="text-button"
+                  onClick={() => {
+                    setGuideN(prefs.n);
+                    navigate("guide");
+                  }}
+                >
+                  How to play <Icon name="arrow" size={16} />
+                </button>
+                <button
+                  className="text-button"
+                  onClick={(e) => {
+                    modalOpener.current = e.currentTarget;
+                    setAssessment(true);
+                  }}
                 >
                   Explore assessment <Icon name="arrow" size={16} />
                 </button>
-              </section>
-              <footer className="page-footer">
-                <Icon name="sprout" size={18} />
-                <span>
-                  Progress grows with practice. Make a little room for yours.
-                </span>
-              </footer>
-            </>
+              </div>
+            </section>
           ) : page === "progress" ? (
             <Progress sessions={sessions} onOpen={(s) => setViewed(s)} />
           ) : page === "guide" ? (
             <Tutorial
               n={guideN}
               onN={setGuideN}
-              standalone
+              input={prefs.input}
               onPractice={() => start("training", guideN, true)}
             />
           ) : (
             <section>
               <div className="page-heading">
                 <div>
-                  <span className="eyebrow">YOUR SPACE, YOUR WAY</span>
-                  <h1>Make yourself comfortable.</h1>
-                  <p>A few simple settings for your daily practice.</p>
+                  <h1>Settings</h1>
                 </div>
               </div>
               <div className="card settings-card">
-                <h2>Practice preferences</h2>
+                <h2>Training preferences</h2>
+                <div className="setting-row">
+                  <div>
+                    <h3>Response style</h3>
+                    <p>Assessment always uses the Match button.</p>
+                  </div>
+                  <select
+                    aria-label="Response style"
+                    value={prefs.input}
+                    onChange={(e) =>
+                      setPrefs({ ...prefs, input: e.target.value as InputMode })
+                    }
+                  >
+                    <option value="fixed">Match button / Space</option>
+                    <option value="aimed">Tap mole / Q W E A S D</option>
+                  </select>
+                </div>
                 <div className="setting-row">
                   <div>
                     <h3>Time with each number</h3>
-                    <p>Training exposure. Assessment always uses 2 seconds.</p>
+                    <p>Assessment always uses 2 seconds.</p>
                   </div>
                   <select
                     aria-label="Time with each number"
@@ -895,13 +623,13 @@ export default function App() {
                 </div>
                 <div className="setting-row">
                   <div>
-                    <h3>Gentle sound cues</h3>
+                    <h3>Sound cues</h3>
                     <p>Optional feedback during training and practice.</p>
                   </div>
                   <button
                     role="switch"
                     aria-checked={prefs.sound}
-                    aria-label="Gentle sound cues"
+                    aria-label="Sound cues"
                     className={`toggle ${prefs.sound ? "on" : ""}`}
                     onClick={() => setPrefs({ ...prefs, sound: !prefs.sound })}
                   >
@@ -911,7 +639,7 @@ export default function App() {
               </div>
               <div className="card settings-card">
                 <div className="section-heading">
-                  <h2>Your data stays with you</h2>
+                  <h2>Saved data</h2>
                   <Icon name="lock" />
                 </div>
                 <p>
@@ -935,7 +663,7 @@ export default function App() {
                 </div>
                 <div className="setting-row">
                   <div>
-                    <h3>Clear my garden</h3>
+                    <h3>Delete saved data</h3>
                     <p>
                       Delete saved sessions and reset preferences on this
                       device.
@@ -943,25 +671,13 @@ export default function App() {
                   </div>
                   <button
                     className="danger-button"
-                    onClick={() => setConfirmDelete(true)}
+                    onClick={(e) => {
+                      modalOpener.current = e.currentTarget;
+                      setConfirmDelete(true);
+                    }}
                   >
                     Delete local data
                   </button>
-                </div>
-              </div>
-              <div className="card about-card">
-                <span className="brand-mark">
-                  <Icon name="sprout" />
-                </span>
-                <div>
-                  <h3>
-                    Recall Garden <span className="small-tag">1.0</span>
-                  </h3>
-                  <p>
-                    An independent number n-back game, made for focused
-                    practice. Match numbers from 1, 2, or 3 turns ago in your
-                    own little garden.
-                  </p>
                 </div>
               </div>
             </section>
@@ -1003,23 +719,30 @@ export default function App() {
             >
               <Icon name="close" />
             </button>
-            <span className="eyebrow">A CONSISTENT CHECK-IN</span>
-            <h2 id="assessment-title">Your memory, in the moment.</h2>
+            <h2 id="assessment-title">Assessment</h2>
             <p>
               A fixed assessment uses 60 scored trials per level, 2-second
               numbers, and the match button or Space. Practice comes first.
               Results are kept separate from training.
             </p>
-            <label className="field-label">Choose your assessment</label>
-            <div className="assessment-choices">
+            <span className="field-label" id="assessment-choice-label">
+              Choose your assessment
+            </span>
+            <div
+              className="assessment-choices"
+              role="group"
+              aria-labelledby="assessment-choice-label"
+            >
               <button
+                aria-pressed={battery}
                 className={battery ? "selected" : ""}
                 onClick={() => setBattery(true)}
               >
-                Full check-in{" "}
+                All three levels{" "}
                 <small>1-, 2-, and 3-back · about 9 min + practice</small>
               </button>
               <button
+                aria-pressed={!battery}
                 className={!battery ? "selected" : ""}
                 onClick={() => setBattery(false)}
               >
@@ -1047,7 +770,7 @@ export default function App() {
             aria-modal="true"
             aria-labelledby="delete-title"
           >
-            <h2 id="delete-title">Clear your saved garden?</h2>
+            <h2 id="delete-title">Delete saved data?</h2>
             <p>
               This deletes all {sessions.length} sessions and preferences stored
               by Recall Garden on this device. You can export a copy first.

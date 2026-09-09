@@ -24,8 +24,9 @@ The production app is a static site in `dist/`. It needs no backend, API key, da
 
 ## What is included
 
-- Responsive dashboard with original vector garden and mole artwork.
-- Interactive worked examples for 1-, 2-, and 3-back.
+- Compact setup with the level, duration, and Start button together.
+- Viewport-fitted play with original mole artwork and a landscape control panel.
+- Interactive worked examples for 1-, 2-, and 3-back, using the selected response style.
 - Mandatory comprehension practice at each new level in a session.
 - Adaptive training with one, three, or five rounds; 1.5–4 second exposure options.
 - Fixed single-level assessment or a complete 1/2/3-back battery.
@@ -44,7 +45,7 @@ For 3-back, `2, 5, 8, 2` ends with a match: the final `2` matches the number thr
 
 | Response style | Controls |
 | --- | --- |
-| Fixed (default; all assessments) | Click/tap **It’s a match**, or press **Space** |
+| Fixed (default; all assessments) | Click/tap **Match**, or press **Space** |
 | Aimed (optional training) | Click/tap the active mole; **Q W E** for top holes and **A S D** for bottom holes |
 | No match | Do nothing |
 | Stop | Select **Stop round**; keyboard focus and activation also work |
@@ -66,6 +67,10 @@ A response does **not** hide the number or make the next trial start sooner. The
 | Controls | Fixed or aimed | Fixed | Same as upcoming round |
 
 Practice requires at least **5 hits out of 6 targets** and **at most 1 false alarm**, with no observed long frames. Failed practice can be repeated with fresh numbers or reviewed in the tutorial. It is saved but excluded from training scores.
+
+The example can be explored without completing a compulsory walkthrough. Players who have previously passed practice at the selected level and response style go directly to practice next time. Every new session still requires a fresh practice pass before scored play. Response style, number exposure, sound, and data exports are in **Settings & data**.
+
+The September 2026 layout uses the `garden-2.0` display version. Scoring, sequence generation, and timing are unchanged. This version participates in the existing configuration fingerprint so progress charts and adaptation do not combine rounds from the old and new displays.
 
 Training moves up one N after two consecutive comparable rounds with hit rate ≥85% and false-alarm rate ≤15%. It moves down after two rounds with hit rate <60% or false-alarm rate >30%. It otherwise holds steady, bounded to 1–3. Qualifying rounds can span sessions. Different settings, interrupted rounds, and quality-failed rounds break the qualifying sequence. The suggested starting level is saved for next time; you can choose another on the dashboard.
 
@@ -131,6 +136,7 @@ The implementation has unit tests for 600 sequence seeds across all N values, qu
 src/App.tsx                Screens and session orchestration
 src/components/Art.tsx     Original SVG icons, mole, and garden
 src/components/Play.tsx    Rendering and browser input adapter
+src/components/Tutorial.tsx Compact interactive examples and practice entry
 src/components/Results.tsx Results, history, and progress chart
 src/game/sequence.ts       Seeded constrained generator and independent labels
 src/game/scoring.ts        Classifier and statistical summaries
@@ -142,3 +148,9 @@ src/styles.css            Responsive layout and visual system
 ```
 
 The product intentionally uses one original skin. Cloud accounts, independent outcome-task batteries, researcher administration, and additional skins are future extensions described in the plan, not prerequisites for playing or tracking training.
+
+## Deployment
+
+The app is published at [Recall Garden](https://doctoime.github.io/tag-me/). A push to `main` runs the GitHub Pages workflow: dependency install, unit tests, formatting check, production build, and deployment of `dist/`. The full browser suite is run locally before release.
+
+The [design review](review/REVIEW.md) preserves the original findings and screenshots. Current regressions live in `tests/usability.spec.ts`, including 13 screen sizes in both input modes, touch responses, viewport containment throughout play, keyboard focus, responsive navigation, and returning-player practice gating.

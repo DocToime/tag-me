@@ -6,9 +6,9 @@ async function installClock(page: Page) {
   await page.clock.pauseAt(new Date(Date.now() + 1000));
 }
 async function tutorial(page: Page) {
-  for (let i = 0; i < 5; i++)
-    await page.getByRole("button", { name: "Next number" }).click();
-  await page.getByRole("button", { name: "Try it in practice" }).click();
+  await page
+    .getByRole("button", { name: "Start practice", exact: true })
+    .click();
 }
 async function solve(page: Page, n: number, scored: number) {
   await page.clock.runFor(3100);
@@ -48,10 +48,11 @@ test("dashboard, responsive layout, tutorial and preferences", async ({
   );
   await page.getByRole("button", { name: "How to play", exact: true }).click();
   await page.getByRole("button", { name: "3-back", exact: true }).click();
-  await page.getByRole("button", { name: "Next number" }).click();
-  await page.getByRole("button", { name: "Next number" }).click();
-  await page.getByRole("button", { name: "Next number" }).click();
-  await expect(page.getByText("Yes, this is a match.")).toBeVisible();
+  await expect(page.locator(".digit-history .example-digit > span")).toHaveText(
+    ["2", "5", "8", "2"],
+  );
+  await page.getByRole("button", { name: /^Match/ }).click();
+  await expect(page.getByText("Correct — these numbers match.")).toBeVisible();
   await page.getByRole("button", { name: "My garden", exact: true }).click();
   await page.setViewportSize({ width: 390, height: 844 });
   await page.screenshot({
@@ -75,7 +76,7 @@ test("completes practice and a training block, persists and exports results", as
   await tutorial(page);
   await solve(page, 1, 12);
   await expect(
-    page.getByRole("heading", { name: "You’ve got the rhythm." }),
+    page.getByRole("heading", { name: "Practice passed" }),
   ).toBeVisible();
   await page.getByRole("button", { name: "Start scored round" }).click();
   await page.clock.runFor(3100);
@@ -86,14 +87,21 @@ test("completes practice and a training block, persists and exports results", as
   await page.clock.runFor(1000);
   await page.getByRole("button", { name: "Stop round" }).click();
   await expect(
-    page.getByRole("heading", { name: "Ready for a fresh start?" }),
+    page.getByRole("heading", { name: "Round stopped" }),
   ).toBeVisible();
   await page.getByRole("button", { name: "Restart round" }).click();
   await solve(page, 1, 60);
   await expect(
-    page.getByRole("heading", { name: "A little time, well spent." }),
+    page.getByRole("heading", { name: "Session complete" }),
   ).toBeVisible();
   await expect(page.getByText("18 of 18 targets caught")).toBeVisible();
+  await expect(page.locator(".block-result").first()).toContainText(
+    "18 of 18 targets caught",
+  );
+  await expect(page.locator(".interrupted-details")).not.toHaveAttribute(
+    "open",
+    "",
+  );
   await page.screenshot({
     path: "test-results/results-desktop.png",
     fullPage: true,
@@ -124,7 +132,7 @@ test("silent practice fails, tab loss interrupts and reload recovers session", a
   await tutorial(page);
   await page.clock.runFor(3000 + 13 * 2750 + 100);
   await expect(
-    page.getByRole("heading", { name: "Let’s give it another go." }),
+    page.getByRole("heading", { name: "Practice needs a retry" }),
   ).toBeVisible();
   await expect(
     page.getByRole("button", { name: "Start scored round" }),
@@ -132,7 +140,9 @@ test("silent practice fails, tab loss interrupts and reload recovers session", a
   await page.getByRole("button", { name: "Try practice again" }).click();
   await page.clock.runFor(3100);
   await page.evaluate(() => window.dispatchEvent(new Event("blur")));
-  await expect(page.getByText(/Window lost focus/)).toBeVisible();
+  await expect(page.locator(".break-page > p")).toContainText(
+    "Window lost focus",
+  );
   await expect(page.getByRole("status")).toContainText("Saved on this device");
   await page.reload();
   await page.getByRole("button", { name: "My progress", exact: true }).click();
@@ -161,7 +171,9 @@ test("aimed mobile practice supports pointer and mapped keys; Space can stop", a
   await page.setViewportSize({ width: 390, height: 844 });
   await installClock(page);
   await page.goto("/");
+  await page.getByRole("button", { name: "Settings & data" }).click();
   await page.getByLabel("Response style").selectOption("aimed");
+  await page.getByRole("button", { name: "My garden", exact: true }).click();
   await page.getByRole("button", { name: "Start training" }).click();
   await tutorial(page);
   await page.clock.runFor(3100);
@@ -185,14 +197,14 @@ test("aimed mobile practice supports pointer and mapped keys; Space can stop", a
     await page.clock.runFor(2750);
   }
   await expect(
-    page.getByRole("heading", { name: "You’ve got the rhythm." }),
+    page.getByRole("heading", { name: "Practice passed" }),
   ).toBeVisible();
   await page.getByRole("button", { name: "Start scored round" }).click();
   await page.clock.runFor(3100);
   await page.getByRole("button", { name: "Stop round" }).focus();
   await page.keyboard.press("Space");
   await expect(
-    page.getByRole("heading", { name: "Ready for a fresh start?" }),
+    page.getByRole("heading", { name: "Round stopped" }),
   ).toBeVisible();
   expect(
     await page.evaluate(
@@ -242,7 +254,7 @@ test("two strong rounds adapt N and require new-level practice", async ({
   await tutorial(page);
   await solve(page, 2, 12);
   await expect(
-    page.getByRole("heading", { name: "You’ve got the rhythm." }),
+    page.getByRole("heading", { name: "Practice passed" }),
   ).toBeVisible();
   await page.getByRole("button", { name: "Finish for now" }).click();
   await page.getByRole("button", { name: "Back to my garden" }).click();
@@ -265,7 +277,7 @@ test("assessment battery keeps feedback neutral and advances through all N level
     await page.keyboard.press("Space");
     await page.clock.runFor(2000);
     await expect(page.locator(".feedback")).not.toContainText(
-      /caught|Different|That was a match/,
+      /Correct|No match|Missed match/,
     );
     // Start the scored attempt afresh after the feedback check.
     await page.getByRole("button", { name: "Stop round" }).click();
@@ -277,7 +289,7 @@ test("assessment battery keeps feedback neutral and advances through all N level
         .click();
   }
   await expect(
-    page.getByRole("heading", { name: "A little time, well spent." }),
+    page.getByRole("heading", { name: "Session complete" }),
   ).toBeVisible();
   await expect(page.getByText("18 of 18 targets caught")).toHaveCount(3);
 });
@@ -328,6 +340,6 @@ test("real-clock play keeps a responded-to digit visible and keyboard stop works
   await page.getByRole("button", { name: "Stop round" }).focus();
   await page.keyboard.press("Space");
   await expect(
-    page.getByRole("heading", { name: "Ready for a fresh start?" }),
+    page.getByRole("heading", { name: "Round stopped" }),
   ).toBeVisible();
 });

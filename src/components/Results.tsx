@@ -61,23 +61,23 @@ export function BlockResult({ block }: { block: Block }) {
             {s.fa} of {s.nonTargets} non-targets
           </small>
         </div>
-        <div>
-          <span>Response time</span>
-          <strong>
-            {s.medianRt === null ? "—" : Math.round(s.medianRt)}
-            <em>{s.medianRt !== null ? " ms" : ""}</em>
-          </strong>
-          <small>Median of {s.rtCount} correct matches</small>
-        </div>
       </div>
       {s.flags.length > 0 && (
         <p className="notice">
-          {s.flags.join(" · ")}. This round does not change your training level.
+          {s.flags.join(" · ")}.
+          {block.config.mode === "training" &&
+            " This round does not change your training level."}
         </p>
       )}
       <details>
         <summary>Detailed round data</summary>
         <div className="detail-grid">
+          <span>
+            Median response time <b>{num(s.medianRt, 0)} ms</b>
+          </span>
+          <span>
+            Correct timed responses <b>{s.rtCount}</b>
+          </span>
           <span>
             Hits <b>{s.hits}</b>
           </span>
@@ -130,7 +130,12 @@ export function BlockResult({ block }: { block: Block }) {
   );
 }
 export function SessionResults({ session }: { session: Session }) {
-  const played = session.blocks.filter((b) => b.config.mode !== "practice");
+  const played = session.blocks.filter(
+    (b) => b.config.mode !== "practice" && b.status === "completed",
+  );
+  const interrupted = session.blocks.filter(
+    (b) => b.config.mode !== "practice" && b.status === "interrupted",
+  );
   return (
     <>
       <div className="session-meta">
@@ -145,9 +150,17 @@ export function SessionResults({ session }: { session: Session }) {
       ) : (
         <div className="empty-card">
           <Icon name="sprout" size={36} />
-          <h3>A little practice is a start.</h3>
-          <p>No scored rounds yet. Your practice attempts are saved below.</p>
+          <h3>No completed rounds yet</h3>
+          <p>Saved attempts are available below.</p>
         </div>
+      )}
+      {interrupted.length > 0 && (
+        <details className="interrupted-details">
+          <summary>Interrupted attempts ({interrupted.length})</summary>
+          {interrupted.map((b) => (
+            <BlockResult key={b.id} block={b} />
+          ))}
+        </details>
       )}
       <details className="practice-details">
         <summary>
@@ -201,9 +214,8 @@ export function Progress({
     <>
       <div className="page-heading">
         <div>
-          <span className="eyebrow">YOUR PRACTICE, OVER TIME</span>
-          <h1>Small steps. Visible progress.</h1>
-          <p>Make room for a little focus, and watch your practice grow.</p>
+          <h1>Your progress</h1>
+          <p>Compare rounds at the same level and settings.</p>
         </div>
         <Icon name="chart" size={38} />
       </div>
@@ -243,17 +255,19 @@ export function Progress({
             </select>
           </label>
           <label>
-            Protocol
+            Settings
             <select
               value={selected}
               onChange={(e) => setFingerprint(e.target.value)}
             >
               {configs.length ? (
-                configs.map((c) => {
+                configs.map((c, index) => {
                   const b = eligible.find((x) => x.b.configHash === c)!.b;
                   return (
                     <option key={c} value={c}>
-                      {b.config.windowMs / 1000}s · {b.config.input} · {c}
+                      {b.config.windowMs / 1000}s ·{" "}
+                      {b.config.input === "fixed" ? "Match button" : "Tap mole"}
+                      {configs.length > 1 ? ` · set ${index + 1}` : ""}
                     </option>
                   );
                 })
@@ -267,7 +281,7 @@ export function Progress({
           <div className="chart-wrap">
             <svg
               viewBox={`0 0 ${width} ${height + 35}`}
-              role="img"
+              role="group"
               aria-label={`Balanced accuracy across ${valid.length} comparable ${n}-back ${mode} rounds`}
             >
               <title>Balanced accuracy by completed round</title>
@@ -285,7 +299,7 @@ export function Progress({
                     x="2"
                     y={height - v * (height - 25) + 4}
                     fontSize="12"
-                    fill="#728171"
+                    fill="#52634b"
                   >
                     {v * 100}%
                   </text>
@@ -305,6 +319,20 @@ export function Progress({
               {valid.map((p, i) => (
                 <g key={p.b.id}>
                   <circle
+                    cx={55 + (i * (width - 85)) / Math.max(1, valid.length - 1)}
+                    cy={height - p.b.summary.balancedAccuracy! * (height - 25)}
+                    r="6"
+                    fill={p.b.summary.flags.length ? "#9a632c" : "#356149"}
+                    stroke={
+                      i > 0 && deviceKey(p) !== deviceKey(valid[i - 1])
+                        ? "#9a632c"
+                        : "transparent"
+                    }
+                    strokeWidth="4"
+                    aria-hidden="true"
+                  />
+                  <circle
+                    className="chart-hit"
                     cx={55 + (i * (width - 85)) / Math.max(1, valid.length - 1)}
                     cy={height - p.b.summary.balancedAccuracy! * (height - 25)}
                     r="6"
@@ -343,7 +371,7 @@ export function Progress({
                     y={height + 25}
                     textAnchor="middle"
                     fontSize="10"
-                    fill="#728171"
+                    fill="#52634b"
                   >
                     {i + 1}
                   </text>
@@ -351,22 +379,31 @@ export function Progress({
               ))}
             </svg>
             <p className="quiet">
-              Same mode, level and protocol. Amber points have quality
-              observations; amber rings mark an input or display change. Select
-              a point to open its session.
+              Amber points mark timing or response observations; rings mark an
+              input or display change.
             </p>
+            <details>
+              <summary>Rounds in this chart</summary>
+              <ul className="round-list">
+                {valid.map((point, i) => (
+                  <li key={point.b.id}>
+                    <button onClick={() => onOpen(point.s)}>
+                      <span>
+                        Round {i + 1} ·{" "}
+                        {new Date(point.b.startedAt).toLocaleDateString()}
+                      </span>
+                      <strong>{pct(point.b.summary.balancedAccuracy)}</strong>
+                      <Icon name="arrow" size={16} />
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </details>
           </div>
         ) : (
           <div className="chart-empty">
-            <div className="empty-chart-bars">
-              <i />
-              <i />
-              <i />
-              <i />
-              <i />
-            </div>
-            <h3>Your progress starts with one round.</h3>
-            <p>Complete a session to plant your first point on the chart.</p>
+            <h3>No rounds for these settings</h3>
+            <p>Complete a round or choose another level to see results.</p>
           </div>
         )}
       </section>

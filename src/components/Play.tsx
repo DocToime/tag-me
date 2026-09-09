@@ -27,6 +27,7 @@ export default function Play({
   const done = useRef(onDone);
   done.current = onDone;
   const holes = useRef<(HTMLButtonElement | null)[]>([]);
+  const field = useRef<HTMLDivElement | null>(null);
   const audio = useRef<AudioContext | null>(null);
   function beep(correct: boolean) {
     if (!sound) return;
@@ -101,14 +102,20 @@ export default function Play({
       if (document.hidden) instance.interrupt("Tab became hidden");
     };
     const blur = () => instance.interrupt("Window lost focus");
-    const initial = { w: innerWidth, h: innerHeight };
+    const initial = field.current!.getBoundingClientRect();
     const resize = () => {
+      const current = field.current?.getBoundingClientRect();
+      if (!current) return;
       if (
-        Math.abs(innerWidth - initial.w) > 80 ||
-        Math.abs(innerHeight - initial.h) > 160
+        Math.abs(current.width - initial.width) > 32 ||
+        Math.abs(current.height - initial.height) > 32 ||
+        Math.abs(current.x - initial.x) > 24 ||
+        Math.abs(current.y - initial.y) > 24
       )
         instance.interrupt("Playfield size changed");
     };
+    const observer = new ResizeObserver(resize);
+    observer.observe(field.current!);
     window.addEventListener("keydown", keydown);
     window.addEventListener("keyup", keyup);
     document.addEventListener("visibilitychange", hidden);
@@ -117,6 +124,7 @@ export default function Play({
     instance.start();
     return () => {
       instance.dispose();
+      observer.disconnect();
       window.removeEventListener("keydown", keydown);
       window.removeEventListener("keyup", keyup);
       document.removeEventListener("visibilitychange", hidden);
@@ -168,22 +176,29 @@ export default function Play({
   const feedback =
     view.phase === "blank" && config.mode !== "assessment" && !fill
       ? {
-          hit: "✓ Match caught. Nicely done.",
-          correct_rejection: "✓ Different number. Good wait.",
-          false_alarm: "Different number — let this one pass.",
-          miss: "That was a match. Keep going.",
+          hit: "✓ Correct match",
+          correct_rejection: "✓ Correct wait",
+          false_alarm: "No match — wait",
+          miss: "Missed match",
           warmup: "",
           pending: "",
         }[view.trial!.code]
       : "";
   return (
-    <section className="play-page">
+    <section
+      className="play-page"
+      tabIndex={-1}
+      aria-label={`${config.mode}, ${config.n}-back`}
+    >
       <div className="play-top">
-        <span className="eyebrow">
-          {config.mode} ·{" "}
-          {config.mode === "practice"
-            ? "Getting familiar"
-            : `Round ${round} of ${total}`}
+        <h1>
+          {config.mode === "practice" ? "Practice" : `Round ${round}/${total}`}{" "}
+          · {config.n}-back
+        </h1>
+        <span className="trial-count">
+          {fill || view.phase === "countdown"
+            ? "Memory fill"
+            : `${Math.min(progress, config.scoredTrials)} / ${config.scoredTrials}`}
         </span>
         <button
           className="text-button"
@@ -193,32 +208,28 @@ export default function Play({
         </button>
       </div>
       <div className="play-title">
-        <span className="level-pill">{config.n}-back</span>
-        <h1>Notice. Remember. Match.</h1>
         <p>
           Match the number from{" "}
           <strong>
             {config.n} turn{config.n > 1 ? "s" : ""} ago.
-          </strong>{" "}
-          Otherwise, wait.
+          </strong>
         </p>
-      </div>
-      <div className="game-progress">
-        <span>
-          {view.phase === "countdown"
-            ? "Settle in"
-            : fill
-              ? "Memory fill · just remember"
-              : `${Math.min(progress, config.scoredTrials)} / ${config.scoredTrials} trials`}
-        </span>
-        <div>
-          <i style={{ width: `${(progress / config.scoredTrials) * 100}%` }} />
+        <div
+          className="game-progress"
+          role="progressbar"
+          aria-label="Round progress"
+          aria-valuemin={0}
+          aria-valuemax={config.scoredTrials}
+          aria-valuenow={progress}
+        >
+          <div>
+            <i
+              style={{ width: `${(progress / config.scoredTrials) * 100}%` }}
+            />
+          </div>
         </div>
-        <span>{config.windowMs / 1000}s per number</span>
       </div>
-      <div className="playfield" data-phase={view.phase}>
-        <div className="field-grass grass-one" />
-        <div className="field-grass grass-two" />
+      <div ref={field} className="playfield" data-phase={view.phase}>
         {Array.from({ length: 6 }, (_, i) => (
           <button
             ref={(el) => {
@@ -248,12 +259,14 @@ export default function Play({
               <Mole digit={view.trial.stimulus.digit} />
             )}
             <span className="hole-rim" />
-            {config.input === "aimed" && <kbd>{keys[i].slice(-1)}</kbd>}
+            {config.input === "aimed" && (
+              <kbd className="keyboard-hint">{keys[i].slice(-1)}</kbd>
+            )}
           </button>
         ))}
         {view.phase === "countdown" && (
           <div className="countdown">
-            <span>Take a breath</span>
+            <span>Get ready</span>
             <strong>{view.remaining}</strong>
             <p>
               The first {config.n} number{config.n > 1 ? "s are" : " is"} for
@@ -262,44 +275,45 @@ export default function Play({
           </div>
         )}
       </div>
-      <div
-        className="feedback"
-        aria-live={config.mode === "assessment" ? "off" : "polite"}
-      >
-        {feedback ||
-          (fill
-            ? "Just remember this number."
-            : ack
-              ? "Response recorded"
-              : view.phase === "countdown"
-                ? "Your garden is ready."
-                : "Stay with the rhythm.")}
-      </div>
-      {config.input === "fixed" ? (
-        <button
-          className={`match-button ${ack ? "acknowledged" : ""}`}
-          onPointerDown={(e) => pointer(e)}
-          onClick={(e) => {
-            if (e.detail === 0)
-              send({
-                eventTime: e.timeStamp,
-                handlerTime: performance.now(),
-                method: "keyboard-control",
-              });
-          }}
+      <div className="play-response">
+        <div
+          className="feedback"
+          aria-live={config.mode === "assessment" ? "off" : "polite"}
         >
-          <Icon name="check" /> It’s a match <kbd>SPACE</kbd>
-        </button>
-      ) : (
-        <p className="input-hint">
-          Tap the mole to match, or use <kbd>Q W E</kbd> / <kbd>A S D</kbd>.
-        </p>
-      )}
-      <p className="quiet centered">
-        {config.mode === "assessment"
-          ? "Keep going at your own rhythm. Results appear after the round."
-          : "No match? No action needed."}
-      </p>
+          {feedback ||
+            (fill
+              ? "Remember this number"
+              : ack
+                ? "Response recorded"
+                : "\u00a0")}
+        </div>
+        {config.input === "fixed" ? (
+          <button
+            className={`match-button ${ack ? "acknowledged" : ""}`}
+            onPointerDown={(e) => pointer(e)}
+            onClick={(e) => {
+              if (e.detail === 0)
+                send({
+                  eventTime: e.timeStamp,
+                  handlerTime: performance.now(),
+                  method: "keyboard-control",
+                });
+            }}
+          >
+            <Icon name="check" /> Match{" "}
+            <kbd className="keyboard-hint">Space</kbd>
+          </button>
+        ) : (
+          <p className="input-hint">
+            Tap the mole to match.
+            <span className="keyboard-hint">
+              {" "}
+              Keys: <kbd>Q W E</kbd> / <kbd>A S D</kbd>.
+            </span>
+          </p>
+        )}
+        <p className="quiet centered">No match? Wait.</p>
+      </div>
     </section>
   );
 }

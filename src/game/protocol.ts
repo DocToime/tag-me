@@ -4,7 +4,7 @@ export const VERSIONS = {
   engine: "1.0",
   generator: "1.0",
   scoring: "loglinear-1.0",
-  art: "garden-1.0",
+  art: "garden-2.0",
 };
 export function protocol(
   n: N,
