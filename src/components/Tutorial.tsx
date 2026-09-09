@@ -1,6 +1,21 @@
-import { useEffect, useState } from "react";
-import type { InputMode, N } from "../game/types";
+import { useState } from "react";
+import { resourceOk, type InputMode, type N } from "../game/types";
 import { Icon, Mole } from "./Art";
+import LevelPicker from "./LevelPicker";
+
+function exampleSequence(n: N): number[] {
+  if (n === 1) return [2, 2, 5, 8, 8, 3];
+  if (n === 2) return [2, 5, 2, 8, 2, 8];
+  if (n === 3) return [2, 5, 8, 2, 7, 8];
+  const cycle = [2, 5, 8, 3, 4, 6, 7, 9, 1];
+  const digits = Array.from({ length: n }, (_, i) => cycle[i % cycle.length]);
+  digits.push(digits[0]);
+  for (let i = n + 1; i < n + 3; i++) {
+    const prior = digits[i - n];
+    digits.push(cycle.find((d) => d !== prior) ?? 1);
+  }
+  return digits;
+}
 
 export default function Tutorial({
   n,
@@ -15,17 +30,15 @@ export default function Tutorial({
 }) {
   const [step, setStep] = useState<number>(n);
   const [answer, setAnswer] = useState("");
-  useEffect(() => {
+  const [seenN, setSeenN] = useState(n);
+  if (n !== seenN) {
+    setSeenN(n);
     setStep(n);
     setAnswer("");
-  }, [n]);
-  const numbers =
-    n === 1
-      ? [2, 2, 5, 8, 8, 3]
-      : n === 2
-        ? [2, 5, 2, 8, 2, 8]
-        : [2, 5, 8, 2, 7, 8];
-  const target = numbers[step] === numbers[step - n];
+  }
+  const allowed = resourceOk(n, Math.max(12, n + 3));
+  const numbers = allowed ? exampleSequence(n) : [];
+  const target = allowed && numbers[step] === numbers[step - n];
   const respond = () =>
     setAnswer(
       target
@@ -46,72 +59,62 @@ export default function Tutorial({
           </p>
         </div>
       </div>
-      {onN && (
-        <div
-          className="segmented tutorial-level"
-          role="group"
-          aria-label="Example level"
-        >
-          {([1, 2, 3] as N[]).map((v) => (
+      {onN && <LevelPicker n={n} onChange={onN} ariaLabel="Example level" />}
+      {allowed ? (
+        <div className="card example-card">
+          <div className="digit-history" aria-label={`${n}-back example`}>
+            {numbers.slice(step - n, step + 1).map((digit, i) => (
+              <div
+                key={i}
+                className={`example-digit ${i === n ? "current" : i === 0 ? "compare" : ""}`}
+              >
+                <span>{digit}</span>
+                <small>
+                  {i === n ? "Now" : i === 0 ? `${n} ago` : "Earlier"}
+                </small>
+              </div>
+            ))}
+          </div>
+          <p className="example-explanation">
+            {target ? "Same number: match." : "Different number: wait."}
+          </p>
+          <div className="example-controls">
+            {input === "aimed" ? (
+              <button
+                className="example-mole"
+                aria-label={`Match number ${numbers[step]}`}
+                onClick={respond}
+              >
+                <Mole digit={numbers[step]} />
+              </button>
+            ) : (
+              <button className="secondary" onClick={respond}>
+                Match <kbd className="keyboard-hint">Space</kbd>
+              </button>
+            )}
             <button
-              key={v}
-              aria-pressed={n === v}
-              className={n === v ? "selected" : ""}
-              onClick={() => onN(v)}
+              className="text-button"
+              onClick={() => {
+                setStep(step === numbers.length - 1 ? n : step + 1);
+                setAnswer("");
+              }}
             >
-              {v}-back
+              Next example <Icon name="arrow" size={16} />
             </button>
-          ))}
+          </div>
+          <p className="example-answer" role="status">
+            {answer ||
+              (input === "aimed"
+                ? "Try tapping the mole above."
+                : "Try the Match button above.")}
+          </p>
         </div>
+      ) : (
+        <p className="notice" role="alert">
+          This level is too large to illustrate here. Choose a smaller starting
+          level.
+        </p>
       )}
-      <div className="card example-card">
-        <div className="digit-history" aria-label={`${n}-back example`}>
-          {numbers.slice(step - n, step + 1).map((digit, i) => (
-            <div
-              key={i}
-              className={`example-digit ${i === n ? "current" : i === 0 ? "compare" : ""}`}
-            >
-              <span>{digit}</span>
-              <small>
-                {i === n ? "Now" : i === 0 ? `${n} ago` : "Earlier"}
-              </small>
-            </div>
-          ))}
-        </div>
-        <p className="example-explanation">
-          {target ? "Same number: match." : "Different number: wait."}
-        </p>
-        <div className="example-controls">
-          {input === "aimed" ? (
-            <button
-              className="example-mole"
-              aria-label={`Match number ${numbers[step]}`}
-              onClick={respond}
-            >
-              <Mole digit={numbers[step]} />
-            </button>
-          ) : (
-            <button className="secondary" onClick={respond}>
-              Match <kbd className="keyboard-hint">Space</kbd>
-            </button>
-          )}
-          <button
-            className="text-button"
-            onClick={() => {
-              setStep(step === numbers.length - 1 ? n : step + 1);
-              setAnswer("");
-            }}
-          >
-            Next example <Icon name="arrow" size={16} />
-          </button>
-        </div>
-        <p className="example-answer" role="status">
-          {answer ||
-            (input === "aimed"
-              ? "Try tapping the mole above."
-              : "Try the Match button above.")}
-        </p>
-      </div>
       <p className="tutorial-rule">
         {input === "aimed" ? (
           <>
@@ -129,6 +132,7 @@ export default function Tutorial({
       <button
         className="primary full-width practice-start"
         onClick={onPractice}
+        disabled={!allowed}
       >
         Start practice <Icon name="arrow" size={18} />
       </button>

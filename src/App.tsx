@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { Icon, Mole } from "./components/Art";
+import LevelPicker from "./components/LevelPicker";
 import Play from "./components/Play";
 import Tutorial from "./components/Tutorial";
 import { BlockResult, Progress, SessionResults } from "./components/Results";
@@ -14,7 +15,15 @@ import {
   RECOVERY,
   saveSession,
 } from "./data/storage";
-import type { Block, Config, InputMode, N, Session } from "./game/types";
+import {
+  isN,
+  resourceOk,
+  type Block,
+  type Config,
+  type InputMode,
+  type N,
+  type Session,
+} from "./game/types";
 type Page = "home" | "progress" | "guide" | "settings";
 type Stage = "instructions" | "play" | "break" | "results" | null;
 interface Preferences {
@@ -35,7 +44,7 @@ function getPreferences(): Preferences {
   try {
     const p = JSON.parse(localStorage.getItem(PREFS) || "{}");
     return {
-      n: [1, 2, 3].includes(p.n) ? p.n : 1,
+      n: isN(p.n) ? p.n : 1,
       blocks: [1, 3, 5].includes(p.blocks) ? p.blocks : 3,
       windowMs: [1500, 2000, 3000, 4000].includes(p.windowMs)
         ? p.windowMs
@@ -220,7 +229,14 @@ export default function App() {
     const s = sessionRef.current;
     if (!s) return;
     try {
-      setPlayConfig(protocol(n, mode, s.config.windowMs, s.config.input));
+      const config = protocol(n, mode, s.config.windowMs, s.config.input);
+      if (!resourceOk(config.n, config.scoredTrials)) {
+        setError(
+          "This level is too large to run here. Choose a smaller starting level.",
+        );
+        return;
+      }
+      setPlayConfig(config);
       setPlayKey((v) => v + 1);
       setStage("play");
     } catch (e) {
@@ -283,7 +299,7 @@ export default function App() {
       return;
     }
     let n = currentN;
-    if (s.mode === "assessment") n = (currentN + 1) as N;
+    if (s.mode === "assessment") n = currentN + 1;
     else {
       const decision = nextDifficulty(s, currentN);
       n = decision.to;
@@ -497,25 +513,11 @@ export default function App() {
                 <span className="field-label" id="starting-level">
                   Starting level
                 </span>
-                <div
-                  className="level-options"
-                  role="group"
-                  aria-labelledby="starting-level"
-                >
-                  {([1, 2, 3] as N[]).map((n) => (
-                    <button
-                      key={n}
-                      aria-pressed={prefs.n === n}
-                      className={prefs.n === n ? "chosen" : ""}
-                      onClick={() => setPrefs({ ...prefs, n })}
-                    >
-                      <strong>{n}-back</strong>
-                      <small>
-                        {n} turn{n > 1 ? "s" : ""} ago
-                      </small>
-                    </button>
-                  ))}
-                </div>
+                <LevelPicker
+                  n={prefs.n}
+                  onChange={(n) => setPrefs({ ...prefs, n })}
+                  labelledBy="starting-level"
+                />
                 <label className="session-length">
                   Session length
                   <select

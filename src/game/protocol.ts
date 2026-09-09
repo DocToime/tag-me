@@ -56,11 +56,8 @@ export function adapt(blocks: Block[], n: N): Adaptation {
           b.summary.faRate <= 0.15,
       )
     ) {
-      to = Math.min(3, n + 1) as N;
-      reason =
-        to > n
-          ? "Two strong rounds. Ready for the next level."
-          : "Strong work at the highest level.";
+      to = n + 1;
+      reason = "Two strong rounds. Ready for the next level.";
     } else if (
       recent.every(
         (b) =>
@@ -69,7 +66,7 @@ export function adapt(blocks: Block[], n: N): Adaptation {
           (b.summary.hitRate < 0.6 || b.summary.faRate > 0.3),
       )
     ) {
-      to = Math.max(1, n - 1) as N;
+      to = Math.max(1, n - 1);
       reason =
         to < n
           ? "Let’s consolidate at a gentler level."
@@ -81,7 +78,7 @@ export function adapt(blocks: Block[], n: N): Adaptation {
     to,
     reason,
     blockIds: recent.map((b) => b.id),
-    version: "1.0",
+    version: "1.1",
   };
 }
 export function passedPractice(b: Block) {

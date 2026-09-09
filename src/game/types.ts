@@ -1,4 +1,16 @@
-export type N = 1 | 2 | 3;
+export type N = number;
+export function isN(value: unknown): value is N {
+  return typeof value === "number" && Number.isSafeInteger(value) && value >= 1;
+}
+export function resourceOk(n: number, scoredTrials: number): boolean {
+  return (
+    isN(n) &&
+    Number.isInteger(scoredTrials) &&
+    scoredTrials >= 1 &&
+    n + scoredTrials <= 100_000 &&
+    Math.max(n + 1, 4) * (n + scoredTrials) <= 10_000_000
+  );
+}
 export type Mode = "training" | "assessment" | "practice";
 export type InputMode = "fixed" | "aimed";
 export type Code =

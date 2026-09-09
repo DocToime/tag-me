@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import type { Block, Session } from "../game/types";
+import { isN, type Block, type Session } from "../game/types";
 import { Icon } from "./Art";
 function deviceKey(point: { s: Session; b: Block }) {
   const viewport = point.b.viewport ?? point.s.client;
@@ -186,6 +186,13 @@ export function Progress({
   const [mode, setMode] = useState("training"),
     [n, setN] = useState(1),
     [fingerprint, setFingerprint] = useState("");
+  const levels = [
+    ...new Set(
+      sessions.flatMap((s) => s.blocks.map((b) => b.config.n)).filter(isN),
+    ),
+  ].sort((a, b) => a - b);
+  const options = levels.length ? levels : [1];
+  const selectedN = options.includes(n) ? n : options[0];
   const eligible = useMemo(
     () =>
       sessions
@@ -195,12 +202,12 @@ export function Progress({
               (b) =>
                 b.status === "completed" &&
                 b.config.mode === mode &&
-                b.config.n === n,
+                b.config.n === selectedN,
             )
             .map((b) => ({ s, b })),
         )
         .sort((a, b) => a.b.startedAt.localeCompare(b.b.startedAt)),
-    [sessions, mode, n],
+    [sessions, mode, selectedN],
   );
   const configs = [...new Set(eligible.map((x) => x.b.configHash))];
   const selected = configs.includes(fingerprint)
@@ -241,15 +248,15 @@ export function Progress({
           <label>
             Level
             <select
-              value={n}
+              value={selectedN}
               onChange={(e) => {
                 setN(+e.target.value);
                 setFingerprint("");
               }}
             >
-              {[1, 2, 3].map((n) => (
-                <option key={n} value={n}>
-                  {n}-back
+              {options.map((level) => (
+                <option key={level} value={level}>
+                  {level}-back
                 </option>
               ))}
             </select>

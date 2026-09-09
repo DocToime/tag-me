@@ -140,7 +140,9 @@ export function Mole({
         y="145"
         textAnchor="middle"
         fontFamily="Arial,sans-serif"
-        fontSize="39"
+        fontSize={
+          String(digit).length >= 3 ? 18 : String(digit).length >= 2 ? 26 : 39
+        }
         fontWeight="700"
         fill="#244d3c"
       >

@@ -1,4 +1,4 @@
-import type { Config, Stimulus } from "./types";
+import { resourceOk, type Config, type Stimulus } from "./types";
 export function hash(value: unknown): string {
   const s = JSON.stringify(value);
   let h = 2166136261;
@@ -28,9 +28,11 @@ export function label(
   n: number,
 ): Pick<Stimulus, "warmup" | "target" | "lure" | "lagMatches">[] {
   return digits.map((d, i) => {
-    const lagMatches = [1, 2, 3, 4].filter(
-      (l) => i >= l && digits[i - l] === d,
-    );
+    const maxLag = Math.max(n + 1, 4);
+    const lagMatches = Array.from(
+      { length: maxLag },
+      (_, lag) => lag + 1,
+    ).filter((l) => i >= l && digits[i - l] === d);
     const warmup = i < n;
     const target = !warmup && lagMatches.includes(n);
     return {
@@ -47,9 +49,8 @@ export function label(
 export function generate(config: Config, seed: string): Stimulus[] {
   const { n, scoredTrials, targets, lures } = config;
   if (
-    ![1, 2, 3].includes(n) ||
-    ![scoredTrials, targets, lures].every(Number.isInteger) ||
-    scoredTrials < 1 ||
+    !resourceOk(n, scoredTrials) ||
+    ![targets, lures].every(Number.isInteger) ||
     targets < 0 ||
     lures < 0 ||
     targets + lures > scoredTrials

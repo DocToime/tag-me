@@ -2,6 +2,8 @@
 
 Prepared 8 September 2026, from `TAG-ME-Again-Game-Specification.md` and `TAG-ME-Again-Review.md`.
 
+**Erratum (9 September 2026):** identity training N is no longer bounded to 1–3. See [UNBOUNDED_N_IMPLEMENTATION_PLAN.md](UNBOUNDED_N_IMPLEMENTATION_PLAN.md). The 1→2→3 assessment battery is unchanged. Dual n-back remains out of scope here.
+
 ## 1. Product decision and scope
 
 Build a complete, browser-based working-memory training app. The user's hypothesis that repeated training is beneficial is the product premise. The interface should encourage a sustainable practice habit, explain the task clearly, and make progress inspectable. It will not repeatedly debate that premise.

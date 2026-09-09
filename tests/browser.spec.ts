@@ -47,7 +47,8 @@ test("dashboard, responsive layout, tutorial and preferences", async ({
     "true",
   );
   await page.getByRole("button", { name: "How to play", exact: true }).click();
-  await page.getByRole("button", { name: "3-back", exact: true }).click();
+  await page.getByRole("button", { name: "Increase memory level" }).click();
+  await page.getByRole("button", { name: "Increase memory level" }).click();
   await expect(page.locator(".digit-history .example-digit > span")).toHaveText(
     ["2", "5", "8", "2"],
   );

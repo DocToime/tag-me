@@ -1,6 +1,6 @@
 # Recall Garden
 
-A complete, local-first browser memory game built from the specification and review in this folder. Train with numbered moles in a six-hole garden, matching the number from one, two, or three turns ago.
+A complete, local-first browser memory game built from the specification and review in this folder. Train with numbered moles in a six-hole garden, matching the number from N turns ago. There is no maximum training level.
 
 The detailed design, review decisions, protocol contracts, architecture, and acceptance checklist are in [IMPLEMENTATION_PLAN.md](IMPLEMENTATION_PLAN.md). The original source documents are preserved alongside it.
 
@@ -26,10 +26,10 @@ The production app is a static site in `dist/`. It needs no backend, API key, da
 
 - Compact setup with the level, duration, and Start button together.
 - Viewport-fitted play with original mole artwork and a landscape control panel.
-- Interactive worked examples for 1-, 2-, and 3-back, using the selected response style.
+- Interactive worked examples for any N (golden 1-, 2-, and 3-back sequences), using the selected response style.
 - Mandatory comprehension practice at each new level in a session.
 - Adaptive training with one, three, or five rounds; 1.5–4 second exposure options.
-- Fixed single-level assessment or a complete 1/2/3-back battery.
+- Fixed single-level assessment at the selected N, or a complete 1/2/3-back battery.
 - Fixed match control and a separately tagged aimed-response training variant.
 - Deliberate breaks, stop/restart, interruption detection, and reload recovery.
 - Per-round counts, component rates, balanced accuracy, sensitivity, response criterion, hit reaction time, rate intervals, and quality observations.
@@ -56,7 +56,7 @@ A response does **not** hide the number or make the next trial start sooner. The
 
 | Parameter | Training | Assessment | Practice |
 | --- | --- | --- | --- |
-| Memory level | 1–3, adaptive at round boundaries | Selected N or 1 → 2 → 3 | Upcoming round’s N |
+| Memory level | Any integer ≥ 1, adaptive at round boundaries, no maximum | Selected N or 1 → 2 → 3 | Upcoming round’s N |
 | Scored trials | 60 | 60 | 12 |
 | Additional fill trials | N | N | N |
 | Targets | Exactly 18 | Exactly 18 | Exactly 6 |
@@ -72,7 +72,7 @@ The example can be explored without completing a compulsory walkthrough. Players
 
 The September 2026 layout uses the `garden-2.0` display version. Scoring, sequence generation, and timing are unchanged. This version participates in the existing configuration fingerprint so progress charts and adaptation do not combine rounds from the old and new displays.
 
-Training moves up one N after two consecutive comparable rounds with hit rate ≥85% and false-alarm rate ≤15%. It moves down after two rounds with hit rate <60% or false-alarm rate >30%. It otherwise holds steady, bounded to 1–3. Qualifying rounds can span sessions. Different settings, interrupted rounds, and quality-failed rounds break the qualifying sequence. The suggested starting level is saved for next time; you can choose another on the dashboard.
+Training moves up one N after two consecutive comparable rounds with hit rate ≥85% and false-alarm rate ≤15%. It moves down after two rounds with hit rate <60% or false-alarm rate >30%. It otherwise holds steady. The floor is 1-back; there is no maximum level. Qualifying rounds can span sessions. Different settings, interrupted rounds, and quality-failed rounds break the qualifying sequence. The suggested starting level is saved for next time; you can choose another on the dashboard.
 
 Three standard rounds take roughly nine minutes of scored play. Practice and breaks are additional. Assessment settings are fixed independently of training preferences.
 

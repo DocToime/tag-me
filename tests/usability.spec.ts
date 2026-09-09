@@ -113,11 +113,9 @@ test("small home keeps setup and start visible without horizontal overflow", asy
   expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(
     320,
   );
-  await page.locator(".level-options button").nth(2).click();
-  await expect(page.locator(".level-options button").nth(2)).toHaveAttribute(
-    "aria-pressed",
-    "true",
-  );
+  await page.getByRole("button", { name: "Increase memory level" }).click();
+  await page.getByRole("button", { name: "Increase memory level" }).click();
+  await expect(page.locator(".level-options .chosen")).toContainText("3-back");
   await expect(page.locator(".home-heading p")).toContainText("3 turns ago");
   await page.getByRole("button", { name: "Start training" }).click();
   await fits(
@@ -127,6 +125,35 @@ test("small home keeps setup and start visible without horizontal overflow", asy
   await expect(page.locator(".digit-history .example-digit > span")).toHaveText(
     ["2", "5", "8", "2"],
   );
+});
+
+test("high-N tutorial scrolls in one row without widening the page", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 320, height: 568 });
+  await page.goto("/");
+  await page
+    .getByRole("main")
+    .getByRole("button", { name: "How to play", exact: true })
+    .click();
+  for (const n of [4, 7]) {
+    while (
+      Number(
+        (
+          await page.locator(".level-options .chosen strong").textContent()
+        )?.split("-")[0],
+      ) < n
+    )
+      await page.getByRole("button", { name: "Increase memory level" }).click();
+    await expect(page.locator(".tutorial .page-heading p")).toContainText(
+      `${n} turns ago`,
+    );
+    expect(
+      await page.evaluate(
+        () => document.documentElement.scrollWidth <= innerWidth,
+      ),
+    ).toBe(true);
+  }
 });
 
 test("navigation remains named and selected at every old breakpoint", async ({
