@@ -28,6 +28,7 @@ test("dashboard, responsive layout, tutorial and preferences", async ({
 }) => {
   const errors: string[] = [];
   page.on("pageerror", (e) => errors.push(e.message));
+  await page.emulateMedia({ colorScheme: "light" });
   await page.goto("/");
   await expect(
     page.getByRole("button", { name: "Start training" }),
@@ -37,15 +38,64 @@ test("dashboard, responsive layout, tutorial and preferences", async ({
     fullPage: true,
   });
   await page.getByRole("button", { name: "Settings & data" }).click();
+  await expect(
+    page.getByRole("button", { name: "Match device", exact: true }),
+  ).toHaveAttribute("aria-pressed", "true");
+  await page.getByRole("button", { name: "Dark", exact: true }).click();
   await page.getByLabel("Time with each number").selectOption("3000");
-  await page.getByRole("switch").click();
+  await page.getByRole("switch", { name: "Sound cues" }).click();
   await page.reload();
+  await page.screenshot({
+    path: "test-results/dashboard-dark.png",
+    fullPage: true,
+  });
   await page.getByRole("button", { name: "Settings & data" }).click();
   await expect(page.getByLabel("Time with each number")).toHaveValue("3000");
-  await expect(page.getByRole("switch")).toHaveAttribute(
-    "aria-checked",
-    "true",
-  );
+  await expect(
+    page.getByRole("switch", { name: "Sound cues" }),
+  ).toHaveAttribute("aria-checked", "true");
+  await expect(
+    page.getByRole("button", { name: "Dark", exact: true }),
+  ).toHaveAttribute("aria-pressed", "true");
+  expect(
+    await page.evaluate(() => document.documentElement.dataset.theme),
+  ).toBe("dark");
+  await page.screenshot({
+    path: "test-results/settings-dark.png",
+    fullPage: true,
+  });
+  await page.getByRole("button", { name: "Light", exact: true }).click();
+  await page.emulateMedia({ colorScheme: "dark" });
+  await page.reload();
+  await page.getByRole("button", { name: "Settings & data" }).click();
+  await expect(
+    page.getByRole("button", { name: "Light", exact: true }),
+  ).toHaveAttribute("aria-pressed", "true");
+  expect(
+    await page.evaluate(() => document.documentElement.dataset.theme),
+  ).toBe("light");
+  await page.getByRole("button", { name: "Match device", exact: true }).click();
+  expect(
+    await page.evaluate(() =>
+      document.documentElement.getAttribute("data-theme"),
+    ),
+  ).toBeNull();
+  await page.emulateMedia({ colorScheme: "dark" });
+  await expect
+    .poll(async () =>
+      page.evaluate(
+        () => getComputedStyle(document.documentElement).backgroundColor,
+      ),
+    )
+    .toBe("rgb(18, 26, 22)");
+  await page.emulateMedia({ colorScheme: "light" });
+  await expect
+    .poll(async () =>
+      page.evaluate(
+        () => getComputedStyle(document.documentElement).backgroundColor,
+      ),
+    )
+    .toBe("rgb(250, 251, 247)");
   await page.getByRole("button", { name: "How to play", exact: true }).click();
   await page.getByRole("button", { name: "Increase memory level" }).click();
   await page.getByRole("button", { name: "Increase memory level" }).click();

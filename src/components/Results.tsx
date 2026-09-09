@@ -299,14 +299,14 @@ export function Progress({
                     x2={width - 15}
                     y1={height - v * (height - 25)}
                     y2={height - v * (height - 25)}
-                    stroke="#dde3d8"
+                    stroke="var(--chart-grid)"
                     strokeDasharray="4 5"
                   />
                   <text
                     x="2"
                     y={height - v * (height - 25) + 4}
                     fontSize="12"
-                    fill="#52634b"
+                    fill="var(--chart-ink)"
                   >
                     {v * 100}%
                   </text>
@@ -320,7 +320,7 @@ export function Progress({
                   )
                   .join(" ")}
                 fill="none"
-                stroke="#356149"
+                stroke="var(--chart-line)"
                 strokeWidth="3"
               />
               {valid.map((p, i) => (
@@ -329,10 +329,14 @@ export function Progress({
                     cx={55 + (i * (width - 85)) / Math.max(1, valid.length - 1)}
                     cy={height - p.b.summary.balancedAccuracy! * (height - 25)}
                     r="6"
-                    fill={p.b.summary.flags.length ? "#9a632c" : "#356149"}
+                    fill={
+                      p.b.summary.flags.length
+                        ? "var(--chart-flag)"
+                        : "var(--chart-line)"
+                    }
                     stroke={
                       i > 0 && deviceKey(p) !== deviceKey(valid[i - 1])
-                        ? "#9a632c"
+                        ? "var(--chart-flag)"
                         : "transparent"
                     }
                     strokeWidth="4"
@@ -343,10 +347,14 @@ export function Progress({
                     cx={55 + (i * (width - 85)) / Math.max(1, valid.length - 1)}
                     cy={height - p.b.summary.balancedAccuracy! * (height - 25)}
                     r="6"
-                    fill={p.b.summary.flags.length ? "#c28c52" : "#356149"}
+                    fill={
+                      p.b.summary.flags.length
+                        ? "var(--chart-flag-hit)"
+                        : "var(--chart-line)"
+                    }
                     stroke={
                       i > 0 && deviceKey(p) !== deviceKey(valid[i - 1])
-                        ? "#c28c52"
+                        ? "var(--chart-flag-hit)"
                         : "transparent"
                     }
                     strokeWidth="4"
@@ -378,7 +386,7 @@ export function Progress({
                     y={height + 25}
                     textAnchor="middle"
                     fontSize="10"
-                    fill="#52634b"
+                    fill="var(--chart-ink)"
                   >
                     {i + 1}
                   </text>

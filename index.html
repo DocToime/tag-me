@@ -4,6 +4,20 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1.0" />
     <meta name="theme-color" content="#244d3c" />
+    <script>
+      (function () {
+        try {
+          var a = JSON.parse(
+            localStorage.getItem("recall-garden-preferences") || "{}",
+          ).appearance;
+          if (a !== "light" && a !== "dark") return;
+          document.documentElement.setAttribute("data-theme", a);
+          var m = document.querySelector('meta[name="theme-color"]');
+          if (m)
+            m.setAttribute("content", a === "dark" ? "#1a2420" : "#244d3c");
+        } catch (e) {}
+      })();
+    </script>
     <meta
       name="description"
       content="Play Recall Garden: match numbers from one, two, or three turns ago. Your practice stays in this browser."

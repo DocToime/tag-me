@@ -44,7 +44,7 @@ Recall Garden is a progressive web app. After you open it once on [https://docto
 - Per-round counts, component rates, balanced accuracy, sensitivity, response criterion, hit reaction time, rate intervals, and quality observations.
 - Local session history with separate progress filters by mode, level, and protocol. Chart points open their sessions; changes of input or display are marked.
 - JSON export with raw telemetry, CSV summaries, and confirmed local-data deletion.
-- Optional sound, reduced-motion support, focus indicators, keyboard controls, and modal focus management.
+- Optional sound, Light / Dark / Match device appearance, reduced-motion support, focus indicators, keyboard controls, and modal focus management.
 
 ## How to play
 
@@ -77,7 +77,7 @@ A response does **not** hide the number or make the next trial start sooner. The
 
 Practice requires at least **5 hits out of 6 targets** and **at most 1 false alarm**, with no observed long frames. Failed practice can be repeated with fresh numbers or reviewed in the tutorial. It is saved but excluded from training scores.
 
-The example can be explored without completing a compulsory walkthrough. Players who have previously passed practice at the selected level and response style go directly to practice next time. Every new session still requires a fresh practice pass before scored play. Response style, number exposure, sound, and data exports are in **Settings & data**.
+The example can be explored without completing a compulsory walkthrough. Players who have previously passed practice at the selected level and response style go directly to practice next time. Every new session still requires a fresh practice pass before scored play. Response style, number exposure, sound, appearance (Light, Dark, or Match device), and data exports are in **Settings & data**.
 
 The September 2026 layout uses the `garden-2.0` display version. Scoring, sequence generation, and timing are unchanged. This version participates in the existing configuration fingerprint so progress charts and adaptation do not combine rounds from the old and new displays.
 
@@ -154,6 +154,7 @@ src/game/engine.ts         Frame scheduling, input windows, interruption
 src/game/protocol.ts       Frozen defaults, fingerprints, adaptation
 src/game/types.ts          Typed protocol and telemetry records
 src/data/storage.ts       IndexedDB, export, recovery keys, deletion
+src/theme.ts               Appearance preference, resolved theme, theme-color
 src/pwa.ts                Production service worker registration
 src/styles.css            Responsive layout and visual system
 ```

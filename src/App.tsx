@@ -25,6 +25,7 @@ import {
   type Session,
 } from "./game/types";
 import { applyPwaUpdate, pwaNeedRefresh, subscribePwa } from "./pwa";
+import { applyAppearance, parseAppearance, type Appearance } from "./theme";
 type Page = "home" | "progress" | "guide" | "settings";
 type Stage = "instructions" | "play" | "break" | "results" | null;
 interface Preferences {
@@ -33,6 +34,7 @@ interface Preferences {
   windowMs: number;
   input: InputMode;
   sound: boolean;
+  appearance: Appearance;
 }
 const defaults: Preferences = {
   n: 1,
@@ -40,6 +42,7 @@ const defaults: Preferences = {
   windowMs: 2000,
   input: "fixed",
   sound: false,
+  appearance: "system",
 };
 function getPreferences(): Preferences {
   try {
@@ -52,6 +55,7 @@ function getPreferences(): Preferences {
         : 2000,
       input: p.input === "aimed" ? "aimed" : "fixed",
       sound: p.sound === true,
+      appearance: parseAppearance(p.appearance),
     };
   } catch {
     return defaults;
@@ -117,6 +121,14 @@ export default function App() {
       setSaveStatus("Preferences could not be saved");
     }
   }, [prefs]);
+  useEffect(() => {
+    applyAppearance(prefs.appearance);
+    if (prefs.appearance !== "system") return;
+    const media = matchMedia("(prefers-color-scheme: dark)");
+    const onChange = () => applyAppearance("system");
+    media.addEventListener("change", onChange);
+    return () => media.removeEventListener("change", onChange);
+  }, [prefs.appearance]);
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: "instant" });
     const target = document.querySelector<HTMLElement>(
@@ -593,6 +605,35 @@ export default function App() {
               </div>
               <div className="card settings-card">
                 <h2>Training preferences</h2>
+                <div className="setting-row">
+                  <div>
+                    <h3 id="appearance-label">Appearance</h3>
+                    <p>Night garden, daytime garden, or follow this device.</p>
+                  </div>
+                  <div
+                    className="segmented appearance-options"
+                    role="group"
+                    aria-labelledby="appearance-label"
+                  >
+                    {(
+                      [
+                        ["light", "Light"],
+                        ["dark", "Dark"],
+                        ["system", "Match device"],
+                      ] as const
+                    ).map(([id, label]) => (
+                      <button
+                        key={id}
+                        type="button"
+                        aria-pressed={prefs.appearance === id}
+                        className={prefs.appearance === id ? "selected" : ""}
+                        onClick={() => setPrefs({ ...prefs, appearance: id })}
+                      >
+                        {label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
                 <div className="setting-row">
                   <div>
                     <h3>Response style</h3>

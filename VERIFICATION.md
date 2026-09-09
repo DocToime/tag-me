@@ -57,3 +57,19 @@ node review/implementation-audit.mjs
 ```
 
 Deployment target: [Recall Garden on GitHub Pages](https://doctoime.github.io/tag-me/). Pushing to `main` runs `.github/workflows/pages.yml`; only `dist/` is deployed.
+
+## Appearance (10 September 2026)
+
+Night-garden chrome with Light / Dark / Match device in Settings. Mole shirt and digit paints are unchanged. `VERSIONS.art` stays `garden-2.0`.
+
+| Check | Result |
+| --- | --- |
+| `npm test` | 30 passed (includes parse/resolve appearance) |
+| `npm run build` | Passed |
+| `npm run format:check` | Passed |
+| Dashboard / prefs browser test | Passed (Dark persists, Light overrides a dark OS, Match device follows `emulateMedia`) |
+| Settings at 320×568 | Three appearance segments fit; no horizontal overflow |
+| Playfield Light vs Dark at 390×844 and 1280×720 | Box within 2 px; digit ≥ 20 px; OS theme flip during a visible trial did not interrupt |
+| Manual pass | Settings, home, and practice countdown read as a night garden; brand mark remains distinct; mole unchanged |
+
+Playwright on this machine reused other projects on :5173/:5174. Targeted browser checks used `PLAYWRIGHT_BASE_URL=http://127.0.0.1:5176`. The full 13-viewport usability matrix was not re-run for this change.

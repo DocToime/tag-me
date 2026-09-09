@@ -269,3 +269,83 @@ test("returning players still pass practice, with compact continuation and speci
   );
   await fits(page.getByRole("button", { name: "Try practice again" }), page);
 });
+
+test("appearance segments fit on a small settings page", async ({ page }) => {
+  await page.setViewportSize({ width: 320, height: 568 });
+  await page.goto("/");
+  await page.getByRole("button", { name: "Settings & data" }).click();
+  for (const name of ["Light", "Dark", "Match device"] as const)
+    await fits(page.getByRole("button", { name, exact: true }), page);
+  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(
+    320,
+  );
+});
+
+test("dark playfield geometry matches light; OS theme does not interrupt", async ({
+  page,
+}) => {
+  await clock(page);
+  for (const [width, height] of [
+    [390, 844],
+    [1280, 720],
+  ] as const) {
+    await page.setViewportSize({ width, height });
+    await page.goto("/");
+    await page.getByRole("button", { name: "Settings & data" }).click();
+    await page.getByRole("button", { name: "Light", exact: true }).click();
+    await page.getByRole("button", { name: "My garden", exact: true }).click();
+    await page.getByRole("button", { name: "Start training" }).click();
+    await page
+      .getByRole("button", { name: "Start practice", exact: true })
+      .click();
+    await page.clock.runFor(3100);
+    const light = await page.locator(".playfield").boundingBox();
+    await page.getByRole("button", { name: "Stop round" }).click();
+    await page.getByRole("button", { name: "Finish for now" }).click();
+    await page.getByRole("button", { name: "Settings & data" }).click();
+    await page.getByRole("button", { name: "Dark", exact: true }).click();
+    await page.getByRole("button", { name: "My garden", exact: true }).click();
+    await page.getByRole("button", { name: "Start training" }).click();
+    await page
+      .getByRole("button", { name: "Start practice", exact: true })
+      .click();
+    await page.clock.runFor(3100);
+    const dark = await page.locator(".playfield").boundingBox();
+    expect(light).not.toBeNull();
+    expect(dark).not.toBeNull();
+    expect(Math.abs(dark!.width - light!.width)).toBeLessThan(2);
+    expect(Math.abs(dark!.height - light!.height)).toBeLessThan(2);
+    expect(Math.abs(dark!.x - light!.x)).toBeLessThan(2);
+    expect(Math.abs(dark!.y - light!.y)).toBeLessThan(2);
+    await fits(page.locator(".playfield"), page);
+    expect(
+      (await page.locator(".hole.occupied text").boundingBox())!.height,
+    ).toBeGreaterThanOrEqual(20);
+    if (width === 390)
+      await page.screenshot({
+        path: "test-results/gameplay-dark-390x844.png",
+      });
+    await page.getByRole("button", { name: "Stop round" }).click();
+    await page.getByRole("button", { name: "Finish for now" }).click();
+  }
+  await page.goto("/");
+  await page.getByRole("button", { name: "Settings & data" }).click();
+  await page.getByRole("button", { name: "Match device", exact: true }).click();
+  await page.getByRole("button", { name: "My garden", exact: true }).click();
+  await page.emulateMedia({ colorScheme: "light" });
+  await start(page);
+  await page.clock.runFor(3100);
+  await expect(page.locator(".playfield")).toHaveAttribute(
+    "data-phase",
+    "visible",
+  );
+  await page.emulateMedia({ colorScheme: "dark" });
+  await page.clock.runFor(100);
+  await expect(
+    page.getByRole("heading", { name: "Round stopped" }),
+  ).toHaveCount(0);
+  await expect(page.locator(".playfield")).toHaveAttribute(
+    "data-phase",
+    "visible",
+  );
+});
