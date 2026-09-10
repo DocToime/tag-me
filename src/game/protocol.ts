@@ -172,12 +172,12 @@ export function adapt(blocks: GameBlock[], n: N): Adaptation {
 }
 export function passedPractice(b: GameBlock) {
   if (isDualBlock(b)) return false;
+  // Hits/false-alarms only. Long frames stay a scored-round quality flag; 250 ms gaps still interrupt.
   return (
     b.status === "completed" &&
     b.summary.hits >= 5 &&
     b.summary.fa <= 1 &&
-    b.summary.scored === 12 &&
-    !b.frames.length
+    b.summary.scored === 12
   );
 }
 export function passedDualPractice(b: DualBlock) {
@@ -188,10 +188,10 @@ export function passedDualPractice(b: DualBlock) {
     s.hits >= 5 &&
     s.fa <= 1 &&
     s.flags.length === 0;
+  // Long frames stay a scored-round quality flag; 250 ms gaps still interrupt.
   return (
     b.config.mode === "practice" &&
     b.status === "completed" &&
-    b.frames.length === 0 &&
     passes(b.positionSummary) &&
     passes(b.numberSummary)
   );

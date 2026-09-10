@@ -248,6 +248,12 @@ describe("scoring", () => {
     expect(passedPractice(block(1, "none", true))).toBe(false);
     expect(passedPractice(block(1, "all", true))).toBe(false);
   });
+  it("does not fail a comprehension pass because of recorded long frames", () => {
+    const ok = block(1, "targets", true);
+    ok.frames = [{ at: 100, gap: 80 }];
+    ok.summary.flags.push("Long frames observed");
+    expect(passedPractice(ok)).toBe(true);
+  });
 });
 describe("adaptation", () => {
   it("raises after two successes with no maximum", () => {

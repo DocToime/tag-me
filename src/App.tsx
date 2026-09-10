@@ -550,11 +550,9 @@ export default function App() {
                 {lastBlock.status === "interrupted"
                   ? `${lastBlock.reason}. Restart with new numbers.`
                   : lastBlock.config.mode === "practice"
-                    ? lastBlock.frames.length
-                      ? "Timing was uneven on this device. Retry practice before starting a scored round."
-                      : isDualBlock(lastBlock)
-                        ? `${lastBlock.positionSummary.hits} of 6 location matches · ${lastBlock.numberSummary.hits} of 6 number matches · ${lastBlock.positionSummary.fa} / ${lastBlock.numberSummary.fa} false alarms.${passedDualPractice(lastBlock) ? "" : " Aim for at least 5 matches and at most 1 false alarm on each stream."}`
-                        : `${lastBlock.summary.hits} of 6 matches caught · ${lastBlock.summary.fa} false alarm${lastBlock.summary.fa === 1 ? "" : "s"}.${passedPractice(lastBlock) ? "" : " Aim for at least 5 matches and at most 1 false alarm."}`
+                    ? isDualBlock(lastBlock)
+                      ? `${lastBlock.positionSummary.hits} of 6 location matches · ${lastBlock.numberSummary.hits} of 6 number matches · ${lastBlock.positionSummary.fa} / ${lastBlock.numberSummary.fa} false alarms.${passedDualPractice(lastBlock) ? "" : " Aim for at least 5 matches and at most 1 false alarm on each stream."}`
+                      : `${lastBlock.summary.hits} of 6 matches caught · ${lastBlock.summary.fa} false alarm${lastBlock.summary.fa === 1 ? "" : "s"}.${passedPractice(lastBlock) ? "" : " Aim for at least 5 matches and at most 1 false alarm."}`
                     : session?.mode === "training"
                       ? isDualSession(session)
                         ? "Same level next round. Dual training does not change N automatically yet."

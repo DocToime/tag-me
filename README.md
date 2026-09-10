@@ -77,7 +77,7 @@ A response does **not** hide the number or make the next trial start sooner. The
 | Correctness feedback          | During blank interval                                     | None                    | During blank interval  |
 | Controls                      | Fixed or aimed                                            | Fixed                   | Same as upcoming round |
 
-Practice requires at least **5 hits out of 6 targets** and **at most 1 false alarm**, with no observed long frames. Failed practice can be repeated with fresh numbers or reviewed in the tutorial. It is saved but excluded from training scores.
+Practice requires at least **5 hits out of 6 targets** and **at most 1 false alarm**. Long frames are still recorded as a quality note, but they no longer fail a comprehension pass; a gap or onset delay over 250 ms still interrupts the round. Failed practice can be repeated with fresh numbers or reviewed in the tutorial. It is saved but excluded from training scores.
 
 The example can be explored without completing a compulsory walkthrough. Players who have previously passed practice at the selected level and response style go directly to practice next time. Every new session still requires a fresh practice pass before scored play. Response style, number exposure, sound, appearance (Light, Dark, or Match device), and data exports are in **Settings & data**.
 

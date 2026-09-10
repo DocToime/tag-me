@@ -343,6 +343,9 @@ describe("dual scoring", () => {
     expect(isDualBlock(block)).toBe(true);
     expect(passedDualPractice(block)).toBe(true);
     expect(passedPractice(block)).toBe(false);
+    expect(
+      passedDualPractice({ ...block, frames: [{ at: 100, gap: 80 }] }),
+    ).toBe(true);
     const silentNumber = summarizeDual(
       sequence.map((s) => dualTrialFromStimulus(s, s.positionTarget, false)),
     );
