@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { GameEngine, type Scheduler, type View } from "../src/game/engine";
 import { protocol } from "../src/game/protocol";
-import type { Block } from "../src/game/types";
+import type { GameBlock } from "../src/game/types";
 class FakeClock implements Scheduler {
   time = 0;
   cb: ((n: number) => void) | undefined;
@@ -27,7 +27,7 @@ class FakeClock implements Scheduler {
 function setup() {
   const clock = new FakeClock(),
     views: View[] = [];
-  let result: Block | undefined;
+  let result: GameBlock | undefined;
   const engine = new GameEngine(
     protocol(1, "practice"),
     "test",

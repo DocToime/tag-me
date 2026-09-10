@@ -54,6 +54,11 @@ export interface Press {
   hitbox?: { x: number; y: number; width: number; height: number };
   disposition?: string;
   trialIndex?: number | null;
+  stream?: Stream;
+  control?: "position" | "number" | "stimulus";
+  ignoreReason?: string;
+  pointerId?: number;
+  pointerType?: string;
 }
 export interface Trial {
   id: string;
@@ -104,6 +109,7 @@ export interface Block {
   startedAt: string;
   viewport?: { width: number; height: number; pixelRatio: number };
   summary: Summary;
+  task?: "identity";
 }
 export interface Adaptation {
   from: N;
@@ -125,7 +131,8 @@ export interface Session {
     blocks: number;
     battery: boolean;
     windowMs: number;
-    input: InputMode;
+    input: InputMode | "dual";
+    task?: Task;
   };
   client: {
     ua: string;
@@ -134,7 +141,92 @@ export interface Session {
     pixelRatio: number;
     timeOrigin: number;
   };
-  blocks: Block[];
+  blocks: GameBlock[];
   adaptations: Adaptation[];
   recoveryNote?: string;
+  task?: Task;
+  uninterpretable?: string;
+}
+export type Task = "identity" | "dual";
+export type Stream = "position" | "number";
+export interface DualConfig {
+  n: N;
+  mode: Mode;
+  scoredTrials: number;
+  targets: number;
+  lures: number;
+  positionTargets: number;
+  positionLures: number;
+  dualTargetBand: readonly [number, number];
+  minConflict: number;
+  windowMs: number;
+  isiMs: number;
+  task: "dual";
+  input: "dual";
+}
+export type GameConfig = Config | DualConfig;
+export interface DualStimulus extends Stimulus {
+  positionTarget: boolean;
+  positionLure: boolean;
+  positionLagMatches: number[];
+  positionIntended: string;
+}
+export interface DualTrial {
+  id: string;
+  stimulus: DualStimulus;
+  plannedOnset: number;
+  onset: number;
+  deadline: number;
+  offset: number | null;
+  response: null;
+  rt: null;
+  code: "pending";
+  positionResponse: Press | null;
+  numberResponse: Press | null;
+  positionRt: number | null;
+  numberRt: number | null;
+  positionCode: Code;
+  numberCode: Code;
+}
+export interface DualDisplaySummary {
+  scoredTrials: number;
+  meanBalancedAccuracy: number | null;
+  meanDPrime: number | null;
+  flags: string[];
+}
+export interface DualBlock {
+  id: string;
+  seed: string;
+  task: "dual";
+  config: DualConfig;
+  configHash: string;
+  sequenceHash: string;
+  versions: { engine: string; generator: string; scoring: string; art: string };
+  sequence: DualStimulus[];
+  trials: DualTrial[];
+  events: Press[];
+  frames: { at: number; gap: number }[];
+  status: "running" | "completed" | "interrupted";
+  reason?: string;
+  startedAt: string;
+  viewport?: { width: number; height: number; pixelRatio: number };
+  summary: DualDisplaySummary;
+  positionSummary: Summary;
+  numberSummary: Summary;
+  dualTargets: number;
+  dualHits: number;
+  dualPartial: number;
+  dualMiss: number;
+  dualAccuracy: number | null;
+  dualInterval: [number, number] | null;
+}
+export type GameBlock = Block | DualBlock;
+export function isDualConfig(config: GameConfig): config is DualConfig {
+  return (config as DualConfig).task === "dual";
+}
+export function isDualBlock(block: GameBlock): block is DualBlock {
+  return (block as DualBlock).task === "dual";
+}
+export function isDualSession(session: Session): boolean {
+  return session.task === "dual" || session.config.task === "dual";
 }

@@ -1,7 +1,23 @@
-import type { Block, Config, Press, Trial } from "./types";
+import type {
+  Config,
+  DualBlock,
+  DualStimulus,
+  DualTrial,
+  GameBlock,
+  GameConfig,
+  Press,
+  Trial,
+} from "./types";
+import { isDualConfig } from "./types";
 import { generate, hash } from "./sequence";
 import { classify, summarize } from "./scoring";
-import { configHash, VERSIONS } from "./protocol";
+import { finalizeDualTrial, summarizeDual } from "./dualScoring";
+import {
+  configHash,
+  dualConfigHash,
+  DUAL_VERSIONS,
+  VERSIONS,
+} from "./protocol";
 export interface Scheduler {
   now(): number;
   request(cb: (time: number) => void): number;
@@ -11,15 +27,44 @@ export type View = {
   phase: "countdown" | "visible" | "blank" | "completed" | "interrupted";
   index: number;
   remaining?: number;
-  trial?: Trial;
+  trial?: Trial | DualTrial;
+};
+export type PreparedDual = {
+  sequence: DualStimulus[];
+  configHash: string;
+  sequenceHash: string;
+  versions: DualBlock["versions"];
 };
 const browserScheduler: Scheduler = {
   now: () => performance.now(),
   request: (cb) => requestAnimationFrame(cb),
   cancel: (id) => cancelAnimationFrame(id),
 };
+function emptyDual(
+  config: GameConfig,
+  seed: string,
+  prepared: PreparedDual,
+): DualBlock {
+  const scored = summarizeDual([]);
+  return {
+    id: crypto.randomUUID(),
+    seed,
+    task: "dual",
+    config: config as DualBlock["config"],
+    configHash: prepared.configHash,
+    sequenceHash: prepared.sequenceHash,
+    versions: prepared.versions,
+    sequence: prepared.sequence,
+    trials: [],
+    events: [],
+    frames: [],
+    status: "running",
+    startedAt: new Date().toISOString(),
+    ...scored,
+  };
+}
 export class GameEngine {
-  readonly block: Block;
+  readonly block: GameBlock;
   private startAt = 0;
   private previous = 0;
   private frame = 0;
@@ -27,29 +72,40 @@ export class GameEngine {
   private phase: View["phase"] = "countdown";
   private active = false;
   private countdownValue = -1;
+  private readonly dual: boolean;
   constructor(
-    config: Config,
+    config: GameConfig,
     seed: string,
     private render: (view: View) => void,
-    private finish: (block: Block) => void,
+    private finish: (block: GameBlock) => void,
     private scheduler: Scheduler = browserScheduler,
+    prepared?: PreparedDual,
   ) {
-    const sequence = generate(config, seed);
-    this.block = {
-      id: crypto.randomUUID(),
-      seed,
-      config,
-      configHash: configHash(config),
-      sequenceHash: hash(sequence),
-      versions: VERSIONS,
-      sequence,
-      trials: [],
-      events: [],
-      frames: [],
-      status: "running",
-      startedAt: new Date().toISOString(),
-      summary: summarize([]),
-    };
+    this.dual = isDualConfig(config);
+    if (this.dual) {
+      if (!prepared)
+        throw new Error("Dual blocks must be prepared before play");
+      this.block = emptyDual(config, seed, prepared);
+    } else {
+      const identity = config as Config;
+      const sequence = generate(identity, seed);
+      this.block = {
+        id: crypto.randomUUID(),
+        seed,
+        task: "identity",
+        config: identity,
+        configHash: configHash(identity),
+        sequenceHash: hash(sequence),
+        versions: VERSIONS,
+        sequence,
+        trials: [],
+        events: [],
+        frames: [],
+        status: "running",
+        startedAt: new Date().toISOString(),
+        summary: summarize([]),
+      };
+    }
   }
   start() {
     if (this.active || this.block.status !== "running") return;
@@ -79,7 +135,13 @@ export class GameEngine {
       const current = this.block.trials[this.index];
       if (this.phase === "visible" && current && now >= current.deadline) {
         current.offset = now;
-        current.code = classify(current.stimulus, current.response, c.input);
+        if (this.dual) finalizeDualTrial(current as DualTrial);
+        else
+          current.code = classify(
+            current.stimulus,
+            (current as Trial).response,
+            c.input === "aimed" ? "aimed" : "fixed",
+          );
         this.phase = "blank";
         this.render({ phase: "blank", index: this.index, trial: current });
       }
@@ -95,18 +157,36 @@ export class GameEngine {
           return;
         }
         this.index = next;
-        const trial: Trial = {
-          id: `${this.block.id}:${next}`,
-          stimulus: this.block.sequence[next],
-          plannedOnset: planned,
-          onset: now,
-          deadline: now + c.windowMs,
-          offset: null,
-          response: null,
-          rt: null,
-          code: "pending",
-        };
-        this.block.trials.push(trial);
+        const trial = this.dual
+          ? ({
+              id: `${this.block.id}:${next}`,
+              stimulus: this.block.sequence[next] as DualStimulus,
+              plannedOnset: planned,
+              onset: now,
+              deadline: now + c.windowMs,
+              offset: null,
+              response: null,
+              rt: null,
+              code: "pending",
+              positionResponse: null,
+              numberResponse: null,
+              positionRt: null,
+              numberRt: null,
+              positionCode: "pending",
+              numberCode: "pending",
+            } satisfies DualTrial)
+          : ({
+              id: `${this.block.id}:${next}`,
+              stimulus: this.block.sequence[next],
+              plannedOnset: planned,
+              onset: now,
+              deadline: now + c.windowMs,
+              offset: null,
+              response: null,
+              rt: null,
+              code: "pending",
+            } satisfies Trial);
+        this.block.trials.push(trial as never);
         this.phase = "visible";
         this.render({ phase: "visible", index: next, trial });
       }
@@ -117,8 +197,23 @@ export class GameEngine {
     if (!this.active) return;
     const event = { ...press, trialIndex: this.index >= 0 ? this.index : null };
     const trial = this.block.trials[this.index];
-    if (event.repeat || event.ignored) event.disposition = "ignored";
-    else if (
+    if (
+      event.control === "stimulus" ||
+      event.ignoreReason === "wrong_control"
+    ) {
+      event.disposition = "ignored";
+      event.ignoreReason = event.ignoreReason ?? "wrong_control";
+    } else if (event.repeat || event.ignored) {
+      event.disposition = "ignored";
+      if (event.repeat) event.ignoreReason = event.ignoreReason ?? "repeat";
+    } else if (
+      this.dual &&
+      event.stream !== "position" &&
+      event.stream !== "number"
+    ) {
+      event.disposition = "ignored";
+      event.ignoreReason = "malformed_stream";
+    } else if (
       !trial ||
       this.phase !== "visible" ||
       event.eventTime < trial.onset ||
@@ -126,11 +221,28 @@ export class GameEngine {
       event.handlerTime >= trial.deadline
     )
       event.disposition = "outside_window";
-    else if (trial.response) event.disposition = "duplicate";
+    else if (this.dual) {
+      const dual = trial as DualTrial;
+      const taken =
+        event.stream === "position"
+          ? dual.positionResponse
+          : dual.numberResponse;
+      if (taken) event.disposition = "duplicate";
+      else {
+        event.disposition = "accepted";
+        if (event.stream === "position") {
+          dual.positionResponse = event;
+          dual.positionRt = event.eventTime - dual.onset;
+        } else {
+          dual.numberResponse = event;
+          dual.numberRt = event.eventTime - dual.onset;
+        }
+      }
+    } else if ((trial as Trial).response) event.disposition = "duplicate";
     else {
       event.disposition = "accepted";
-      trial.response = event;
-      trial.rt = event.eventTime - trial.onset;
+      (trial as Trial).response = event;
+      (trial as Trial).rt = event.eventTime - trial.onset;
     }
     this.block.events.push(event);
     return event.disposition;
@@ -141,18 +253,24 @@ export class GameEngine {
     this.scheduler.cancel(this.frame);
     this.block.status = "interrupted";
     this.block.reason = reason;
-    this.block.summary = summarize(this.block.trials);
+    this.score();
     this.render({ phase: "interrupted", index: this.index });
     this.finish(this.block);
   }
   private complete() {
     this.active = false;
     this.block.status = "completed";
-    this.block.summary = summarize(this.block.trials);
-    if (this.block.frames.length)
+    this.score();
+    if (!this.dual && this.block.frames.length)
       this.block.summary.flags.push("Long frames observed");
     this.render({ phase: "completed", index: this.index });
     this.finish(this.block);
+  }
+  private score() {
+    if (this.dual) {
+      const dual = this.block as DualBlock;
+      Object.assign(dual, summarizeDual(dual.trials, dual.frames));
+    } else this.block.summary = summarize(this.block.trials as Trial[]);
   }
   dispose() {
     this.active = false;

@@ -17,14 +17,14 @@ Run date: 9 September 2026. This record covers the design and playability improv
 
 ## Checks
 
-| Check | Result |
-| --- | --- |
-| `npm test` | 24 passed |
-| `npm run build` | Passed: TypeScript and Vite production build |
-| `npm run format:check` | Passed |
-| `git diff --check` | Passed |
-| Full browser regression suite | 40 passed in 9.4 minutes |
-| Production build smoke tests | Passed in Chrome 153, Firefox 141, and WebKit 26 on Linux |
+| Check                         | Result                                                    |
+| ----------------------------- | --------------------------------------------------------- |
+| `npm test`                    | 24 passed                                                 |
+| `npm run build`               | Passed: TypeScript and Vite production build              |
+| `npm run format:check`        | Passed                                                    |
+| `git diff --check`            | Passed                                                    |
+| Full browser regression suite | 40 passed in 9.4 minutes                                  |
+| Production build smoke tests  | Passed in Chrome 153, Firefox 141, and WebKit 26 on Linux |
 
 The 40 browser scenarios include the nine original workflows, updated for the concise interface, plus 31 usability regressions. Original workflows cover scored training, the 1/2/3 assessment battery, adaptation, saving/recovery, export, deletion, aimed responses, and real-clock keyboard behaviour. New checks cover 13 viewport sizes in both response modes, touch inputs, all six holes and the active digit within bounds, no scrolling across play phases, accessible navigation, focus restoration, geometry interruption, and returning-player practice gating.
 
@@ -62,14 +62,40 @@ Deployment target: [Recall Garden on GitHub Pages](https://doctoime.github.io/ta
 
 Night-garden chrome with Light / Dark / Match device in Settings. Mole shirt and digit paints are unchanged. `VERSIONS.art` stays `garden-2.0`.
 
-| Check | Result |
-| --- | --- |
-| `npm test` | 30 passed (includes parse/resolve appearance) |
-| `npm run build` | Passed |
-| `npm run format:check` | Passed |
-| Dashboard / prefs browser test | Passed (Dark persists, Light overrides a dark OS, Match device follows `emulateMedia`) |
-| Settings at 320×568 | Three appearance segments fit; no horizontal overflow |
-| Playfield Light vs Dark at 390×844 and 1280×720 | Box within 2 px; digit ≥ 20 px; OS theme flip during a visible trial did not interrupt |
-| Manual pass | Settings, home, and practice countdown read as a night garden; brand mark remains distinct; mole unchanged |
+| Check                                           | Result                                                                                                     |
+| ----------------------------------------------- | ---------------------------------------------------------------------------------------------------------- |
+| `npm test`                                      | 30 passed (includes parse/resolve appearance)                                                              |
+| `npm run build`                                 | Passed                                                                                                     |
+| `npm run format:check`                          | Passed                                                                                                     |
+| Dashboard / prefs browser test                  | Passed (Dark persists, Light overrides a dark OS, Match device follows `emulateMedia`)                     |
+| Settings at 320×568                             | Three appearance segments fit; no horizontal overflow                                                      |
+| Playfield Light vs Dark at 390×844 and 1280×720 | Box within 2 px; digit ≥ 20 px; OS theme flip during a visible trial did not interrupt                     |
+| Manual pass                                     | Settings, home, and practice countdown read as a night garden; brand mark remains distinct; mole unchanged |
 
 Playwright on this machine reused other projects on :5173/:5174. Targeted browser checks used `PLAYWRIGHT_BASE_URL=http://127.0.0.1:5176`. The full 13-viewport usability matrix was not re-run for this change.
+
+## Recall Garden Dual (10 September 2026)
+
+Optional visual–visual dual n-back on branch `dual-nback`, implemented from [DUAL_NBACK_IMPLEMENTATION_PLAN.md](DUAL_NBACK_IMPLEMENTATION_PLAN.md) version 1.2 against `main` at `59aedb0` (unbounded N, PWA, and appearance already landed). Identity `generate()` / `VERSIONS` / 1–3 `seed` hashes were not changed. Dual training is fixed-N; dual adaptation is not shipped.
+
+| Check                                                          | Result                                                              |
+| -------------------------------------------------------------- | ------------------------------------------------------------------- |
+| `npm test`                                                     | 53 passed (identity 30 + dual generator/scoring/engine/storage)     |
+| Identity hashes `seed` 1/2/3                                   | `8eadaf0d` / `c898454e` / `5dc8c1bd`                                |
+| Dual N=1 training seed `184`                                   | Generated within retain-partner budgets                             |
+| Dual seed banks                                                | 200 training seeds at N=1–5; 30 at 8 and 12; 30 practice at those N |
+| `npx tsc -b` / `npm run build`                                 | Passed                                                              |
+| `npm run format:check`                                         | Passed                                                              |
+| Dual Playwright smoke                                          | Practice + two stream results; Location/Number fit 320×568          |
+| Identity dashboard, training, aimed, assessment, 320×568 fixed | Passed against the dual worktree                                    |
+| Full 13-viewport dual matrix                                   | Not a substitute for a later device/multi-touch pass                |
+
+```sh
+npm test
+npm run build
+npm run format:check
+PLAYWRIGHT_BASE_URL=http://127.0.0.1:5178 PLAYWRIGHT_CHANNEL=chrome \
+  npx playwright test tests/dual-smoke.spec.ts
+```
+
+CI on `main` now also installs Chromium and runs `tests/dual-smoke.spec.ts` before deploying `dist/`.

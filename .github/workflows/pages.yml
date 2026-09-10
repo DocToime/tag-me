@@ -26,6 +26,8 @@ jobs:
       - run: npm test
       - run: npm run format:check
       - run: npm run build
+      - run: npx playwright install --with-deps chromium
+      - run: npx playwright test tests/dual-smoke.spec.ts
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:

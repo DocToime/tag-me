@@ -666,6 +666,50 @@ details > p {
   touch-action: none;
   user-select: none;
 }
+.playfield[data-task="dual"] {
+  grid-template-rows: repeat(2, minmax(0, 1fr)) minmax(56px, auto);
+}
+.playfield > .countdown {
+  grid-column: 1 / -1;
+  grid-row: 1 / span 2;
+}
+.playfield[data-task="dual"] > .countdown {
+  grid-row: 1 / span 3;
+}
+.dual-response {
+  min-height: 56px;
+  padding: 8px 6px;
+  border-radius: 9px;
+  border: 1px solid var(--green);
+  color: var(--on-green);
+  background: var(--green);
+  box-shadow: 0 3px 0 var(--match-shadow);
+  font-size: 15px;
+  font-weight: 600;
+  touch-action: none;
+  z-index: 3;
+}
+.dual-response.location {
+  grid-column: 1;
+  grid-row: 3;
+}
+.dual-response.number {
+  grid-column: 3;
+  grid-row: 3;
+}
+.dual-turf {
+  grid-column: 2;
+  grid-row: 3;
+}
+.dual-response.acknowledged {
+  background: var(--match-ack);
+  box-shadow: 0 2px 0 var(--match-shadow);
+}
+.dual-feedback {
+  height: 44px;
+  line-height: 20px;
+  white-space: pre-line;
+}
 .hole {
   position: relative;
   min-height: 0;
@@ -1210,6 +1254,27 @@ kbd {
   .example-answer {
     min-height: 40px;
   }
+  .dual-history {
+    flex-wrap: wrap;
+  }
+  .example-omitted {
+    align-self: center;
+    max-width: 7rem;
+    text-align: center;
+    color: var(--muted);
+    font-size: 12px;
+  }
+  .dual-example-controls {
+    flex-wrap: wrap;
+  }
+  .stream-title {
+    margin: 12px 0 8px;
+    font-size: 16px;
+  }
+  .secondary.selected {
+    border-color: var(--green);
+    box-shadow: inset 0 0 0 1px var(--green);
+  }
   .tutorial-rule {
     font-size: 14px;
   }
@@ -1362,6 +1427,14 @@ kbd {
   .match-button {
     font-size: 16px;
     gap: 8px;
+  }
+  .dual-response {
+    font-size: 14px;
+    min-height: 48px;
+  }
+  .dual-feedback {
+    height: 40px;
+    font-size: 12px;
   }
   .countdown strong {
     font-size: 48px;

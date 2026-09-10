@@ -1,8 +1,8 @@
 # Recall Garden
 
-A complete, local-first browser memory game built from the specification and review in this folder. Train with numbered moles in a six-hole garden, matching the number from N turns ago. There is no maximum training level.
+A complete, local-first browser memory game built from the specification and review in this folder. Train with numbered moles in a six-hole garden, matching the number from N turns ago. There is no maximum training level. **Recall Garden Dual** is an optional second task: location and shirt number are scored as two streams.
 
-The detailed design, review decisions, protocol contracts, architecture, and acceptance checklist are in [IMPLEMENTATION_PLAN.md](IMPLEMENTATION_PLAN.md). The original source documents are preserved alongside it.
+The detailed design, review decisions, protocol contracts, architecture, and acceptance checklist are in [IMPLEMENTATION_PLAN.md](IMPLEMENTATION_PLAN.md). Dual n-back is specified in [DUAL_NBACK_IMPLEMENTATION_PLAN.md](DUAL_NBACK_IMPLEMENTATION_PLAN.md). The original source documents are preserved alongside it.
 
 ## Run locally
 
@@ -33,6 +33,7 @@ Recall Garden is a progressive web app. After you open it once on [https://docto
 
 ## What is included
 
+- Optional **Recall Garden Dual** task with Location and Number controls, two stream summaries, and a both-target count. Dual training is fixed-N in this release.
 - Compact setup with the level, duration, and Start button together.
 - Viewport-fitted play with original mole artwork and a landscape control panel.
 - Interactive worked examples for any N (golden 1-, 2-, and 3-back sequences), using the selected response style.
@@ -52,28 +53,29 @@ Remember the **number**, not the hole. If the current number equals the number *
 
 For 3-back, `2, 5, 8, 2` ends with a match: the final `2` matches the number three turns earlier. The first N appearances only fill memory and are never scored.
 
-| Response style | Controls |
-| --- | --- |
-| Fixed (default; all assessments) | Click/tap **Match**, or press **Space** |
-| Aimed (optional training) | Click/tap the active mole; **Q W E** for top holes and **A S D** for bottom holes |
-| No match | Do nothing |
-| Stop | Select **Stop round**; keyboard focus and activation also work |
+| Response style                                 | Controls                                                                                                                                    |
+| ---------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
+| Fixed (default; all number-memory assessments) | Click/tap **Match**, or press **Space**                                                                                                     |
+| Aimed (optional number-memory training)        | Click/tap the active mole; **Q W E** for top holes and **A S D** for bottom holes                                                           |
+| Dual (optional task)                           | **Location** (`A` / Left) and **Number** (`L` / Right). Both allowed. Hitting the mole is not a response. Space is not a global dual match. |
+| No match                                       | Do nothing                                                                                                                                  |
+| Stop                                           | Select **Stop round**; keyboard focus and activation also work                                                                              |
 
 A response does **not** hide the number or make the next trial start sooner. The first eligible press determines the result. Extra presses cannot repair an initial mistake. In aimed mode, a wrong-hole press is a miss on a target and a false alarm on a non-target.
 
 ## Protocol defaults
 
-| Parameter | Training | Assessment | Practice |
-| --- | --- | --- | --- |
-| Memory level | Any integer ≥ 1, adaptive at round boundaries, no maximum | Selected N or 1 → 2 → 3 | Upcoming round’s N |
-| Scored trials | 60 | 60 | 12 |
-| Additional fill trials | N | N | N |
-| Targets | Exactly 18 | Exactly 18 | Exactly 6 |
-| Non-target adjacent-lag lures | Exactly 5 | Exactly 5 | Exactly 1 |
-| Number exposure | 2,000 ms default; configurable | 2,000 ms fixed | At least 2,000 ms |
-| Blank interval | 750 ms | 750 ms | 750 ms |
-| Correctness feedback | During blank interval | None | During blank interval |
-| Controls | Fixed or aimed | Fixed | Same as upcoming round |
+| Parameter                     | Training                                                  | Assessment              | Practice               |
+| ----------------------------- | --------------------------------------------------------- | ----------------------- | ---------------------- |
+| Memory level                  | Any integer ≥ 1, adaptive at round boundaries, no maximum | Selected N or 1 → 2 → 3 | Upcoming round’s N     |
+| Scored trials                 | 60                                                        | 60                      | 12                     |
+| Additional fill trials        | N                                                         | N                       | N                      |
+| Targets                       | Exactly 18                                                | Exactly 18              | Exactly 6              |
+| Non-target adjacent-lag lures | Exactly 5                                                 | Exactly 5               | Exactly 1              |
+| Number exposure               | 2,000 ms default; configurable                            | 2,000 ms fixed          | At least 2,000 ms      |
+| Blank interval                | 750 ms                                                    | 750 ms                  | 750 ms                 |
+| Correctness feedback          | During blank interval                                     | None                    | During blank interval  |
+| Controls                      | Fixed or aimed                                            | Fixed                   | Same as upcoming round |
 
 Practice requires at least **5 hits out of 6 targets** and **at most 1 false alarm**, with no observed long frames. Failed practice can be repeated with fresh numbers or reviewed in the tutorial. It is saved but excluded from training scores.
 
@@ -127,6 +129,7 @@ npm run build              # strict TypeScript and production bundle
 npm run format:check       # consistent source formatting
 npx playwright install chromium
 npm run test:browser       # real browser workflows, virtual timing for long rounds
+npx playwright test tests/dual-smoke.spec.ts
 npm run test:pwa           # service worker offline reload against the production preview
 ```
 
@@ -148,6 +151,9 @@ src/components/Art.tsx     Original SVG icons, mole, and garden
 src/components/Play.tsx    Rendering and browser input adapter
 src/components/Tutorial.tsx Compact interactive examples and practice entry
 src/components/Results.tsx Results, history, and progress chart
+src/game/dualSequence.ts   Dual generator, joint constraints, preparation errors
+src/game/dualScoring.ts    Stream projection and both-target conjunction
+src/components/TutorialDual.tsx Player-paced dual examples with Check/Next
 src/game/sequence.ts       Seeded constrained generator and independent labels
 src/game/scoring.ts        Classifier and statistical summaries
 src/game/engine.ts         Frame scheduling, input windows, interruption
@@ -163,6 +169,6 @@ The product intentionally uses one original skin. Cloud accounts, independent ou
 
 ## Deployment
 
-The app is published at [Recall Garden](https://doctoime.github.io/tag-me/). A push to `main` runs the GitHub Pages workflow: dependency install, unit tests, formatting check, production build, and deployment of `dist/`. The full browser suite is run locally before release.
+The app is published at [Recall Garden](https://doctoime.github.io/tag-me/). A push to `main` runs the GitHub Pages workflow: dependency install, unit tests, formatting check, production build, a small dual Playwright smoke, and deployment of `dist/`. The full browser suite is run locally before release.
 
 The [design review](review/REVIEW.md) preserves the original findings and screenshots. Current regressions live in `tests/usability.spec.ts`, including 13 screen sizes in both input modes, touch responses, viewport containment throughout play, keyboard focus, responsive navigation, and returning-player practice gating.

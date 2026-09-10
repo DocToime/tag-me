@@ -1,7 +1,14 @@
 import { useMemo, useState } from "react";
-import { isN, type Block, type Session } from "../game/types";
+import {
+  isN,
+  isDualBlock,
+  isDualSession,
+  type GameBlock,
+  type Session,
+  type Summary,
+} from "../game/types";
 import { Icon } from "./Art";
-function deviceKey(point: { s: Session; b: Block }) {
+function deviceKey(point: { s: Session; b: GameBlock }) {
   const viewport = point.b.viewport ?? point.s.client;
   return JSON.stringify([
     point.s.client.ua,
@@ -20,7 +27,116 @@ function deviceKey(point: { s: Session; b: Block }) {
 export const pct = (v: number | null) =>
   v === null ? "—" : `${Math.round(v * 100)}%`;
 const num = (v: number | null, d = 2) => (v === null ? "—" : v.toFixed(d));
-export function BlockResult({ block }: { block: Block }) {
+function chartAccuracy(block: GameBlock) {
+  return isDualBlock(block)
+    ? block.summary.meanBalancedAccuracy
+    : block.summary.balancedAccuracy;
+}
+function SummaryMetrics({ s, title }: { s: Summary; title?: string }) {
+  return (
+    <>
+      {title && <h4 className="stream-title">{title}</h4>}
+      <div className="result-metrics">
+        <div>
+          <span>Balanced accuracy</span>
+          <strong>{pct(s.balancedAccuracy)}</strong>
+          <small>Matches & correct waits</small>
+        </div>
+        <div>
+          <span>Match detection</span>
+          <strong>{pct(s.hitRate)}</strong>
+          <small>
+            {s.hits} of {s.targets} targets caught
+          </small>
+        </div>
+        <div>
+          <span>False alarms</span>
+          <strong>{pct(s.faRate)}</strong>
+          <small>
+            {s.fa} of {s.nonTargets} non-targets
+          </small>
+        </div>
+      </div>
+    </>
+  );
+}
+export function BlockResult({ block }: { block: GameBlock }) {
+  if (isDualBlock(block)) {
+    return (
+      <div className="block-result">
+        <div className="section-heading">
+          <h3>
+            {block.config.n}-back{" "}
+            <span className="small-tag">Dual {block.config.mode}</span>
+          </h3>
+          <span
+            className={`status-tag ${block.status === "interrupted" ? "warning" : ""}`}
+          >
+            {block.status === "completed" ? "Completed" : "Interrupted"}
+          </span>
+        </div>
+        {block.reason && (
+          <p className="notice">
+            {block.reason}. This attempt is saved separately; restart with fresh
+            numbers.
+          </p>
+        )}
+        <SummaryMetrics s={block.positionSummary} title="Location" />
+        <SummaryMetrics s={block.numberSummary} title="Number" />
+        <div className="result-metrics">
+          <div>
+            <span>Both-target trials</span>
+            <strong>
+              {block.dualHits} of {block.dualTargets}
+            </strong>
+            <small>
+              {block.dualInterval
+                ? `Wilson ${pct(block.dualInterval[0])} – ${pct(block.dualInterval[1])}`
+                : "Wilson interval unavailable"}
+            </small>
+          </div>
+        </div>
+        {block.summary.flags.length > 0 && (
+          <p className="notice">{block.summary.flags.join(" · ")}.</p>
+        )}
+        <details>
+          <summary>Detailed round data</summary>
+          <div className="detail-grid">
+            <span>
+              Mean balanced accuracy{" "}
+              <b>{pct(block.summary.meanBalancedAccuracy)}</b>
+            </span>
+            <span>
+              Mean sensitivity (d′) <b>{num(block.summary.meanDPrime)}</b>
+            </span>
+            <span>
+              Both-target partials <b>{block.dualPartial}</b>
+            </span>
+            <span>
+              Both-target misses <b>{block.dualMiss}</b>
+            </span>
+            <span>
+              Location hit responses <b>{block.positionSummary.rtCount}</b>
+            </span>
+            <span>
+              Number hit responses <b>{block.numberSummary.rtCount}</b>
+            </span>
+            <span>
+              Long frames <b>{block.frames.length}</b>
+            </span>
+            <span>
+              Protocol <b>{block.configHash}</b>
+            </span>
+          </div>
+          <p className="quiet">
+            {block.config.windowMs} ms exposure · Location + Number controls ·{" "}
+            {block.summary.scoredTrials} scored trials · {block.config.n}{" "}
+            unscored memory-fill trials. Combined means are display-only.
+          </p>
+        </details>
+      </div>
+    );
+  }
   const s = block.summary;
   return (
     <div className="block-result">
@@ -184,37 +300,44 @@ export function Progress({
   onOpen: (s: Session) => void;
 }) {
   const [mode, setMode] = useState("training"),
+    [task, setTask] = useState<"identity" | "dual">("identity"),
     [n, setN] = useState(1),
     [fingerprint, setFingerprint] = useState("");
+  const usable = sessions.filter((s) => !s.uninterpretable);
   const levels = [
     ...new Set(
-      sessions.flatMap((s) => s.blocks.map((b) => b.config.n)).filter(isN),
+      usable
+        .flatMap((s) => s.blocks)
+        .filter((b) => (task === "dual") === isDualBlock(b))
+        .map((b) => b.config.n)
+        .filter(isN),
     ),
   ].sort((a, b) => a - b);
   const options = levels.length ? levels : [1];
   const selectedN = options.includes(n) ? n : options[0];
   const eligible = useMemo(
     () =>
-      sessions
+      usable
         .flatMap((s) =>
           s.blocks
             .filter(
               (b) =>
                 b.status === "completed" &&
                 b.config.mode === mode &&
-                b.config.n === selectedN,
+                b.config.n === selectedN &&
+                (task === "dual") === isDualBlock(b),
             )
             .map((b) => ({ s, b })),
         )
         .sort((a, b) => a.b.startedAt.localeCompare(b.b.startedAt)),
-    [sessions, mode, selectedN],
+    [usable, mode, selectedN, task],
   );
   const configs = [...new Set(eligible.map((x) => x.b.configHash))];
   const selected = configs.includes(fingerprint)
     ? fingerprint
     : (configs.at(-1) ?? "");
   const points = eligible.filter((x) => x.b.configHash === selected).slice(-16);
-  const valid = points.filter((x) => x.b.summary.balancedAccuracy !== null);
+  const valid = points.filter((x) => chartAccuracy(x.b) !== null);
   const width = 680,
     height = 210;
   return (
@@ -232,6 +355,19 @@ export function Progress({
           <span className="quiet">Balanced accuracy</span>
         </div>
         <div className="filters">
+          <label>
+            Task
+            <select
+              value={task}
+              onChange={(e) => {
+                setTask(e.target.value as "identity" | "dual");
+                setFingerprint("");
+              }}
+            >
+              <option value="identity">Number memory</option>
+              <option value="dual">Dual memory</option>
+            </select>
+          </label>
           <label>
             Mode
             <select
@@ -273,7 +409,11 @@ export function Progress({
                   return (
                     <option key={c} value={c}>
                       {b.config.windowMs / 1000}s ·{" "}
-                      {b.config.input === "fixed" ? "Match button" : "Tap mole"}
+                      {isDualBlock(b)
+                        ? "Location + Number controls"
+                        : b.config.input === "fixed"
+                          ? "Match button"
+                          : "Tap mole"}
                       {configs.length > 1 ? ` · set ${index + 1}` : ""}
                     </option>
                   );
@@ -316,7 +456,7 @@ export function Progress({
                 points={valid
                   .map(
                     (p, i) =>
-                      `${55 + (i * (width - 85)) / Math.max(1, valid.length - 1)},${height - p.b.summary.balancedAccuracy! * (height - 25)}`,
+                      `${55 + (i * (width - 85)) / Math.max(1, valid.length - 1)},${height - chartAccuracy(p.b)! * (height - 25)}`,
                   )
                   .join(" ")}
                 fill="none"
@@ -327,7 +467,7 @@ export function Progress({
                 <g key={p.b.id}>
                   <circle
                     cx={55 + (i * (width - 85)) / Math.max(1, valid.length - 1)}
-                    cy={height - p.b.summary.balancedAccuracy! * (height - 25)}
+                    cy={height - chartAccuracy(p.b)! * (height - 25)}
                     r="6"
                     fill={
                       p.b.summary.flags.length
@@ -345,7 +485,7 @@ export function Progress({
                   <circle
                     className="chart-hit"
                     cx={55 + (i * (width - 85)) / Math.max(1, valid.length - 1)}
-                    cy={height - p.b.summary.balancedAccuracy! * (height - 25)}
+                    cy={height - chartAccuracy(p.b)! * (height - 25)}
                     r="6"
                     fill={
                       p.b.summary.flags.length
@@ -360,7 +500,7 @@ export function Progress({
                     strokeWidth="4"
                     tabIndex={0}
                     role="button"
-                    aria-label={`Open round ${i + 1}: ${pct(p.b.summary.balancedAccuracy)} balanced accuracy`}
+                    aria-label={`Open round ${i + 1}: ${pct(chartAccuracy(p.b))} balanced accuracy`}
                     onClick={() => onOpen(p.s)}
                     onKeyDown={(event) => {
                       if (event.key === "Enter" || event.key === " ") {
@@ -372,7 +512,7 @@ export function Progress({
                   >
                     <title>
                       {new Date(p.b.startedAt).toLocaleDateString()}:{" "}
-                      {pct(p.b.summary.balancedAccuracy)}
+                      {pct(chartAccuracy(p.b))}
                       {p.b.summary.flags.length
                         ? " · " + p.b.summary.flags.join(", ")
                         : ""}
@@ -407,7 +547,7 @@ export function Progress({
                         Round {i + 1} ·{" "}
                         {new Date(point.b.startedAt).toLocaleDateString()}
                       </span>
-                      <strong>{pct(point.b.summary.balancedAccuracy)}</strong>
+                      <strong>{pct(chartAccuracy(point.b))}</strong>
                       <Icon name="arrow" size={16} />
                     </button>
                   </li>
@@ -439,7 +579,13 @@ export function Progress({
               </span>
               <span>
                 <strong>
-                  {s.mode === "training" ? "Memory training" : "Assessment"}
+                  {isDualSession(s) || s.blocks.some(isDualBlock)
+                    ? s.mode === "training"
+                      ? "Dual training"
+                      : "Dual assessment"
+                    : s.mode === "training"
+                      ? "Memory training"
+                      : "Assessment"}
                 </strong>
                 <small>
                   {new Date(s.startedAt).toLocaleDateString(undefined, {
